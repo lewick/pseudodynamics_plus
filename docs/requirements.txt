@@ -1,11 +1,11 @@
 ipykernel
 ipython
-myst-nb>=1.1
-sphinx>=8.1
+myst-nb
+sphinx
 sphinx-autodoc-typehints
-sphinx-book-theme>=1
+sphinx-book-theme
 sphinx-copybutton
 sphinx-tabs
-sphinxcontrib-bibtex>=1
+sphinxcontrib-bibtex
 sphinxcontrib-katex
 sphinxext-opengraph
