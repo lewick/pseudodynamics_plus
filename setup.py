@@ -58,7 +58,7 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     
-    install_requires = ['numpy>=1.9.0', 'scipy>=1.4.0', 'matplotlib', 'statsmodels>=0.13', 'seaborn', 'torchcfm'],
+    install_requires = ['numpy>=1.9.0', 'scipy>=1.4.0', 'matplotlib', 'statsmodels>=0.13', 'seaborn', 'torchcfm', 'scanpy', 'palantir'],
     include_package_data=True,
 
 
