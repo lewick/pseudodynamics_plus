@@ -6,7 +6,7 @@
 :hidden: true
 :maxdepth: 3
 
-<!-- api.md -->
+api.md
 tutorials.md
 references.md
 
