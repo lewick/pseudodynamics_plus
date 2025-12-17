@@ -19,8 +19,6 @@ sphinx:
 # See https://docs.readthedocs.io/en/stable/guides/reproducible-builds.html
 python:
   install:
-    # First install your package
     - method: pip
       path: .
-    # Then install documentation dependencies
-    - requirements: docs/requirements.txt
+      extra_requirements: [docs]

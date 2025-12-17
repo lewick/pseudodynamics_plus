@@ -17,17 +17,33 @@ HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE / "extensions"))
 
 
-# Add the project root to the Python path
-sys.path.insert(0, os.path.abspath('../src'))
-sys.path.insert(0, os.path.abspath('../..'))
 
-# For autodoc to work
+# Add the src directory to the Python path
+sys.path.insert(0, os.path.abspath('../src'))
+sys.path.insert(0, os.path.abspath('..'))
+
+# Debug: Print Python path and check if package is importable
+print("=== DEBUG INFO ===")
 print("Python path:", sys.path)
+print("Current directory:", os.getcwd())
+print("Project root:", os.path.abspath('..'))
+print("Src directory exists:", os.path.exists(os.path.abspath('../src')))
+
 try:
     import pseudodynamics
-    print("pseudodynamics module found at:", pseudodynamics.__file__)
+    print("✓ Successfully imported pseudodynamics")
+    print("  Location:", pseudodynamics.__file__)
 except ImportError as e:
-    print("Failed to import pseudodynamics:", e)
+    print("✗ Failed to import pseudodynamics:", e)
+    # Try importing directly from src
+    sys.path.insert(0, os.path.abspath('../src'))
+    try:
+        import pseudodynamics
+        print("✓ Successfully imported pseudodynamics from src")
+    except ImportError as e2:
+        print("✗ Also failed from src:", e2)
+
+print("===================")
 
 # -- Project information -----------------------------------------------------
 
