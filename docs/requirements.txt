@@ -1,6 +1,3 @@
-# First line installs your package in development mode
--e ../
-
 myst-nb
 sphinx
 sphinx-autodoc-typehints
