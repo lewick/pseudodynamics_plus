@@ -1,5 +1,3 @@
-ipykernel
-ipython
 myst-nb
 sphinx
 sphinx-autodoc-typehints
