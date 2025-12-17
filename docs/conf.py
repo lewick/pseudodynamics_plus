@@ -6,7 +6,7 @@
 
 # -- Path setup --------------------------------------------------------------
 import shutil
-import sys
+import os,sys
 from datetime import datetime
 from importlib.metadata import metadata
 from pathlib import Path, PurePosixPath
@@ -16,6 +16,13 @@ from sphinxcontrib import katex
 HERE = Path(__file__).parent
 sys.path.insert(0, str(HERE / "extensions"))
 
+
+# Add the project root to the Python path
+sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../..'))
+
+# For autodoc to work
+autodoc_mock_imports = []
 
 # -- Project information -----------------------------------------------------
 
