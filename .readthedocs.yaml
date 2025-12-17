@@ -19,9 +19,10 @@ sphinx:
 # See https://docs.readthedocs.io/en/stable/guides/reproducible-builds.html
 python:
    install:
+   # First install your package
    - method: pip
-     path: .  # This installs your package
+     path: .
      extra_requirements:
-      - docs  # It's good practice to have a "docs" extra in pyproject.toml/setup.py
+       - docs  # It's good practice to have a "docs" extra in pyproject.toml/setup.py
    - requirements: docs/requirements.txt
         
