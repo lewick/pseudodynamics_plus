@@ -22,7 +22,6 @@ python:
    # First install your package
    - method: pip
      path: .
-     editable: true
      extra_requirements:
        - docs
    # Then install any additional requirements
