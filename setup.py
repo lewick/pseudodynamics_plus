@@ -63,8 +63,16 @@ setup(
 
 
     extras_require={
-        'docs': [
-            #'sphinx == 1.8.3',
-            'sphinx_bootstrap_theme']},
+        'docs':  [
+            'myst-nb',
+            'sphinx',
+            'sphinx-autodoc-typehints',
+            'sphinx-book-theme>=1.1.4',
+            'sphinx-copybutton>=0.5.2',
+            'sphinx-tabs==3.4.7',
+            'sphinxcontrib-bibtex==2.6.5',
+            'sphinxcontrib-katex>=0.9.11',
+            'sphinxext-opengraph>=0.13.0',
+        ]},
 
 )

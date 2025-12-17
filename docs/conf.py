@@ -18,7 +18,7 @@ sys.path.insert(0, str(HERE / "extensions"))
 
 
 # Add the project root to the Python path
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../src'))
 sys.path.insert(0, os.path.abspath('../..'))
 
 # For autodoc to work

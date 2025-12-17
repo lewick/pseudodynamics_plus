@@ -9,6 +9,15 @@ build:
   os: ubuntu-24.04
   tools:
     python: "3.13"
+   # Add debugging commands
+  commands:
+    # Check what's being installed
+    - python -c "import sys; print('Python path:', sys.path)"
+    - pwd
+    - ls -la
+    - ls -la src/
+    # Try to import the package
+    - python -c "import sys; sys.path.insert(0, 'src'); try: import pseudodynamics; print('SUCCESS: Package found!'); except Exception as e: print(f'FAILED: {e}')"
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
