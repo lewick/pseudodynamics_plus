@@ -22,7 +22,12 @@ sys.path.insert(0, os.path.abspath('../src'))
 sys.path.insert(0, os.path.abspath('../..'))
 
 # For autodoc to work
-autodoc_mock_imports = []
+print("Python path:", sys.path)
+try:
+    import pseudodynamics
+    print("pseudodynamics module found at:", pseudodynamics.__file__)
+except ImportError as e:
+    print("Failed to import pseudodynamics:", e)
 
 # -- Project information -----------------------------------------------------
 
