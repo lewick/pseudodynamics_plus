@@ -21,7 +21,7 @@ python:
    install:
    - method: pip
    #   path: .  # This installs your package
-     extra_requirements:
-      - docs  # It's good practice to have a "docs" extra in pyproject.toml/setup.py
+   #   extra_requirements:
+      # - docs  # It's good practice to have a "docs" extra in pyproject.toml/setup.py
    - requirements: docs/requirements.txt
         
