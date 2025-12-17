@@ -1,4 +1,4 @@
-[![Docs](https://readthedocs.com/projects/icb-scanpy/badge/?version=latest)](https://scanpy.readthedocs.io)
+[![Docs](https://pseudodynamics-plus.readthedocs.io/en/latest/index.html)](https://pseudodynamics-plus.readthedocs.io/en/latest/index.html)
 
 # Pseudodynamics+
 Physics Informed Neural Network based method for solving the single-cell population dynamics.   
@@ -8,7 +8,7 @@ For each cell, we estiamte the dynamic parameter of the cell proliferation, diff
   
 
 # Getting started
-Check the tutorial notebooks for instructions on preparing your data and downstream analysis.  
+Check the [tutorial notebooks](https://pseudodynamics-plus.readthedocs.io/en/latest/tutorials.html) for instructions on preparing your data and downstream analysis.  
 
 
 
@@ -20,7 +20,7 @@ pip install -e .
 ```
 
 # Training
-To train pseudodynamics+ on your data, make sure you store the population size information in `AnnData.uns['pop']` and saved in `h5ad` format. Configure the training setting in `config.yaml`. See examples here [example](url). Run the following command:
+To train pseudodynamics+ on your data, make sure you store the population size information in `AnnData.uns['pop']` and saved in `h5ad` format. Configure the training setting in `config.yaml`. See examples here [example](https://pseudodynamics-plus.readthedocs.io/en/latest/notebooks/setup_config.html). Run the following command:
 
 ```bash
 # with GPU 
