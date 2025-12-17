@@ -22,7 +22,9 @@ python:
    # First install your package
    - method: pip
      path: .
+     editable: true
      extra_requirements:
-       - docs  # It's good practice to have a "docs" extra in pyproject.toml/setup.py
+       - docs
+   # Then install any additional requirements
    - requirements: docs/requirements.txt
         
