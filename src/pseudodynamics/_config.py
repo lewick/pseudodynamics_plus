@@ -5,6 +5,16 @@ import datetime
 import json
 from argparse import Namespace
 from typing import Dict, Any
+from pathlib import Path
+
+# We get the directory containing this file (the 'PINN' package directory).
+PACKAGE_DIR = Path(__file__).resolve().parent
+
+# The project root is two levels up from __init__.py
+PROJECT_ROOT_DIR = PACKAGE_DIR.parent.parent
+
+# Expose the variable for the user
+main_dir = str(PROJECT_ROOT_DIR)
 
 class ExperimentConfig:
     """Records and manages experiment configuration settings."""
@@ -132,7 +142,7 @@ class ExperimentConfig:
             if v is None:
                 self.__setattr__(k, None)
     
-    def from_json(self, file_path: str, main_dir: str = None) -> 'ExperimentConfig':
+    def from_json(self, file_path: str, main_dir: str = main_dir) -> 'ExperimentConfig':
         """Load a saved experiment configuration from JSON file.
         
         Args:

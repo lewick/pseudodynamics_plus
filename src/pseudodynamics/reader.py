@@ -20,7 +20,7 @@ class HigDim_AnnDS(AnnDataset):
         r"""
         High Dimensional Cell state Dataset for trajectory indepdent modeling
 
-        Augment
+        Args
         --------
         n_repeat : the output file path from script
         nearby_cellstate : the number of near (cell state)
@@ -272,7 +272,7 @@ class TwoTimpepoint_AnnDS(HigDim_AnnDS):
         Dataset for high dimensional cellstate
         Each batch returns the cellstates, and their density in two consecutive timepoints
         
-        Augments
+        Args
         --------
         AnnData : annData, the scanpy 
         cellstate_key : str, the obsm key, the lower dimension representation on which we will use to compute density
@@ -372,7 +372,7 @@ class TwoTimpepoint_AnnDS_fastmode(TwoTimpepoint_AnnDS):
         Dataset for high dimensional cellstate
         Each batch returns the cellstates, and their density in two consecutive timepoints
         
-        Augments
+        Args
         --------
         AnnData : annData, the scanpy 
         cellstate_key : str, the obsm key, the lower dimension representation on which we will use to compute density
@@ -383,7 +383,7 @@ class TwoTimpepoint_AnnDS_fastmode(TwoTimpepoint_AnnDS):
         nearby_cellstate : the number of near (cell state)
         norm_Time : log-normalize the real timepoint 
 
-        Fast Model Augments
+        Fast Model Args
         -------
         n_pseudobulk : int, defult None -> adata.shape[0] / 20, the number of pseudo bulk to end with
         pseudobulk_key : str, default 'pseudo_bulk'
@@ -476,7 +476,7 @@ class Duds_AnnDS(TwoTimpepoint_AnnDS):
         Mannually distrizitize the duds with pre-sampled ∆x as base
         Each batch returns the cellstates, and their density in two consecutive timepoints and density changes
         
-        Augments
+        Args
         --------
         n_repeat : the output file path from script
         nearby_cellstate : the number of near (cell state)
@@ -584,7 +584,7 @@ class Duds_AnnDS_fastmode(Duds_AnnDS):
         FAST MODE : Mannually distrizitize the duds with pre-sampled ∆x as base
         Each batch returns the cellstates, and their density in two consecutive timepoints and density changes
         
-        Augments
+        Args
         --------
         n_repeat : the output file path from script
         nearby_cellstate : the number of near (cell state)
@@ -597,7 +597,7 @@ class Duds_AnnDS_fastmode(Duds_AnnDS):
         timepoint_key : str, the obs key that indicate the experimental time the cells are collected from
         pop_dict : dict, the dictionary we use to pass population statistics including collected timepoint, mean ,variation
         
-        Fast Model Augments
+        Fast Model Args
         -------
         n_pseudobulk : int, defult None -> adata.shape[0] / 20, the number of pseudo bulk to end with
         pseudobulk_key : str, default 'pseudo_bulk'
@@ -644,7 +644,7 @@ class Syn_DS(Dataset):
         Synthsized data. The data is not time sensitive.
         Each time we will sample a batch of cells of the same timepoint
 
-        Augments
+        Args
         --------
         cellstate : Tensor, [n_cell, n_dimension], the cellstate space
         density : Tensor, [n_time, n_cell] the cellular density
@@ -699,7 +699,7 @@ class SingleBranch_AnnDS(AnnDataset, MeshGrid):
         """
         Single branch system using pseudotime grid to span the all cell state space
 
-        Augment
+        Args
         --------
         n_repeat : the output file path from script
         nearby_cellstate : the number of near (cell state)
@@ -770,7 +770,7 @@ class MeshGrid_AnnDS(AnnDataset, MeshGrid):
         """
         Two branch system using mesh grid to span the all cell state space
 
-        Augment
+        Args
         --------
         n_repeat : the output file path from script
         nearby_cellstate : the number of near (cell state)
@@ -915,7 +915,7 @@ class MeshGrid_logDS(MeshGrid_Resample):
         """
         Two branch system using mesh grid to span the all cell state space
 
-        Augment
+        Args
         --------
         n_repeat : the output file path from script
         nearby_cellstate : the number of near (cell state)
@@ -982,7 +982,7 @@ class Pdyn_ExtractDataset(Processed_baseDS):
         PINN-dynamics Dataset using the pre-extracted data.   
         This dataset returns full cell state (0-1) for each mini-batch
         
-        Augments
+        Args
         --------
         Data_pt : the output file path from script
 
@@ -1061,7 +1061,7 @@ class Random_ExtractDataset(Pdyn_ExtractDataset):
         """
         Based on the pre-extracted dataset, 
 
-        Augments
+        Args
         -----------
         Data_pt :
         nearby_cellstate : the range of cell state in a minibatch
@@ -1109,7 +1109,7 @@ class MeshGrid_DS(Processed_baseDS, MeshGrid):
         PINN-dynamics Dataset using the pre-extracted data.   
         This dataset returns full cell state (0-1) for each mini-batch
         
-        Augment
+        Args
         --------
         Data_pt : the output file path from script
         nearby_cellstate : the number of near (cell state)

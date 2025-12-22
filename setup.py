@@ -19,7 +19,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     
 
 setup(
-    name='pseudodyanmics',
+    name='pseudodynamics',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
@@ -58,13 +58,21 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     
-    install_requires = ['numpy>=1.9.0', 'scipy>=1.4.0', 'matplotlib', 'statsmodels>=0.13', 'seaborn', 'torchcfm'],
+    install_requires = ['numpy>=1.9.0', 'scipy>=1.4.0', 'matplotlib', 'statsmodels>=0.13', 'seaborn', 'torchcfm', 'scanpy', 'palantir'],
     include_package_data=True,
 
 
     extras_require={
-        'docs': [
-            #'sphinx == 1.8.3',
-            'sphinx_bootstrap_theme']},
+        'docs':  [
+            'myst-nb',
+            'sphinx',
+            'sphinx-autodoc-typehints',
+            'sphinx-book-theme>=1.1.4',
+            'sphinx-copybutton>=0.5.2',
+            'sphinx-tabs==3.4.7',
+            'sphinxcontrib-bibtex==2.6.5',
+            'sphinxcontrib-katex>=0.9.11',
+            'sphinxext-opengraph>=0.13.0',
+        ]},
 
 )
