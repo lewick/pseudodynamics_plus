@@ -22,7 +22,7 @@ def forward_get_params(pde_model, DataSet, t_ts=None, s_ts=None, timepoint_label
     r"""
     Given the setup dataset, evalute the behavior functions
 
-    Arguments:
+    Args:
     ----------
     pde_model : nn.Module, sub-class of PINN.models.pde_params_base
     DataSet : sub-class of `PINN.readers.HighdimAnnDS` 
@@ -80,7 +80,7 @@ def agg_param(adata, param:np.ndarray, groupby_key='cell_type', timepoints=None,
     r"""
     Aggregate dynamic parameters by specific cell state label
 
-    Arguments:
+    Args:
     ------
     adata (AnnData): Annotated data matrix
     param (str): Parameter name
@@ -137,7 +137,7 @@ def continuous_params(pde_model, DataSet,
     Predict the continuous change of dynamic parameters.
     The cellstate observed at the last timepoint is used.
 
-    Arguments:
+    Args:
     ----------
     pde_model : nn.Module, sub-class of PINN.models.pde_params_base
     DataSet : sub-class of `PINN.readers.HighdimAnnDS` 
@@ -210,7 +210,7 @@ def density_shortterm_simulation(pde_model, DataSet, timepoint_idx=None, time_sp
     r"""
     simulate density for each cells for any two consecutive timepoints
 
-    Arguments:
+    Args:
     ----------
     pde_model : nn.Module, sub-class of PINN.models.pde_params_base
     DataSet : sub-class of `PINN.readers.HighdimAnnDS` 
@@ -451,7 +451,7 @@ def W_distance(u_b, u_simulate, p=2, log_transform=False):
     Normalize the density and compute the Wasserstein distance between observation and prediction.
     Log-density is supported, pass log_transform = True
 
-    Input
+    Args
     -------
     u_b : ndarray, [n_time, n_cell] , observed density
     u_simulate : ndarray, [n_time, n_cell], inferred desity
@@ -492,7 +492,7 @@ def W_log_distance(u_b, u_simulate, p=2, log_transform=False):
     Normalize the density and compute the Wasserstein distance between observation and prediction.
     Log-density is supported, pass log_transform = True
 
-    Input
+    Args
     -------
     u_b : ndarray, [n_time, n_cell] , observed density
     u_simulate : ndarray, [n_time, n_cell], inferred desity
@@ -532,7 +532,7 @@ def KLD_density(u_b, u_simulate, sanity_check=True):
     r"""
     Normalize the density and compute the KL-divergence between observation and prediction
 
-    Input
+    Args
     -------
     u_b : ndarray, [n_time, n_cell] , observed density
     u_simulate : ndarray, [n_time, n_cell], inferred desity
@@ -570,7 +570,7 @@ def mmd_laplace(X, Y, gamma=None):
     r"""
     Compute MMD with Laplace kernel between two distributions.
     
-    Input
+    Args
     -------
     X, Y (array-like): Samples from the two distributions (shape: [n_samples, n_features]).
     gamma (float, optional): Bandwidth parameter. If None, uses median heuristic.

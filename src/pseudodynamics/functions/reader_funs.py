@@ -48,7 +48,7 @@ def compute_guassian_u(Cellstate_ay, dimension=10):
     Estimating the density high dimensional cell state coordinates and its change by experimental time.
     The density estimation function is 
     
-    Input
+    Args
     -------
     Cellstate_ay : ndarray of shape (N_cell, dimension), the high dimensional cell state representation, i.e. PC, Diffusion Map (DM) , SCVI-latent
     dimension : control the nubmer of the first few dimension to use for density esitmation
@@ -83,7 +83,7 @@ def compute_guassian_u(Cellstate_ay, dimension=10):
 def boundary_density_at(D, t_b, x, density_fn:callable=None):
     """
     Evaluate the cell density at time point `t_b` using the pre-defined density function
-    Input
+    Args
     -------
     D: the extracted data dictionary
     t_b : the boundary time point
@@ -117,7 +117,7 @@ def boundary_density_at(D, t_b, x, density_fn:callable=None):
 def evaluate_1d_density(D, t_b, x):
     """
     extract the cell density at time point `t_b`, this function works for 1 dimensional data
-    Input
+    Args
     -------
     D: the extracted data dictionary
     t_b : the boundary time point
@@ -166,7 +166,7 @@ def evaluate_1d_density(D, t_b, x):
 def evaluate_2d_mesh_density(D, t_b, x):
     """
     extract the cell density at time point `t_b`. this function works for 2 dimensional mesh grid 
-    Input
+    Args
     -------
     D: the extracted data dictionary
     t_b : the boundary time point
@@ -287,7 +287,7 @@ def evaluate_u_ds(cid, cellstate, u_tb, delta_s, den_fn, scaler):
     r"""
     func for multi-process density estimate inside time-point loop
 
-    Input
+    Args
     ------
     cid: cell index , numerical index, not cell barcode
     cellstate : array [n_cell, n_dim] high-dimensional coordinate (representation) of all cells
@@ -443,7 +443,7 @@ def sample_deltax_from_transition(adata, transition_matrix,xkey=None, pseudotime
     the Key function defines the delta-X sampling process 
     given the transition matrix, then sample the delta x
 
-    Input:
+    Args:
     -----
     transition_matrix : nd array of shape (n_cell, n_cell), i.e : cell rank transition matrix
     xkey : obsm_key or layer_key of the adata, from which space we sample the delta x
@@ -611,7 +611,7 @@ def make_coord_adata(adata, cellstate_key, n_dimension, v = None):
     construct adata based on cellstate coodinates from expression matrix based adata
     the new adata is mainly for visualizing v
 
-    Arguments:
+    Args:
     -----------
     adata : anndata, the source anndata to extract info
     cellstate_key : which representation to use
@@ -699,7 +699,7 @@ def get_pseudobulk(adata, cellstate_key, n_dimension=None, pseudobulk_key='pseud
     r"""
     generate pseudo-bulk (meta-cell) using super-high resolution clustering
 
-    Arguments
+    Args
     -----------
     adata_DM : adata with DM was X
     pseudobulk_key : str, a obs key to specify the pseudobulk_key to use 
