@@ -8,5 +8,9 @@
 **.DS_Store
 data
 **.vscode
+<<<<<<< HEAD
+**.ipynb_checkpoints
+=======
 docs/_build
 docs/generated
+>>>>>>> f00179fca1f40b2a2049e2c3faf5572f788610c3
