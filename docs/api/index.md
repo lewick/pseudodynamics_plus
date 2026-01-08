@@ -1,6 +1,21 @@
 # API
 
-## Config
+Import `pseudodynamics+` as:
+
+```
+import pseudodynamics as pdp
+```
+
+```{toctree}
+:maxdepth: 2
+
+config
+preprocessing
+models
+plotting
+```
+
+<!-- ## Config
 
 ```{eval-rst}
 .. currentmodule:: pseudodynamics
@@ -74,4 +89,4 @@
 
     de_test._base
     de_test._association_test
-```
+``` -->
