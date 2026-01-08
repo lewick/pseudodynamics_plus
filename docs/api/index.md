@@ -12,7 +12,7 @@ import pseudodynamics as pdp
 config
 reader
 models
-tools
+tool
 plotting
 detest
 ```

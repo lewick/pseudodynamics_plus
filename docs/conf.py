@@ -116,7 +116,7 @@ intersphinx_mapping = {
     "sklearn": ("https://scikit-learn.org/stable/", None),
     "scanpy": ("https://scanpy.readthedocs.io/en/stable/", None),
     "jax": ("https://jax.readthedocs.io/en/latest/", None),
-    "torch": ("https://pytorch.org/docs/master/", None),
+    # "torch": ("https://pytorch.org/docs/master/", None),
     "plottable": ("https://plottable.readthedocs.io/en/latest/", None),
     "scvi-tools": ("https://docs.scvi-tools.org/en/stable/", None),
     "mudata": ("https://mudata.readthedocs.io/en/latest/", None),

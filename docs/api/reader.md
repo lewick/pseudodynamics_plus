@@ -1,4 +1,4 @@
-# Config
+# Data Reader
 
 ```{eval-rst}
 .. module:: pseudodynamics.reader
