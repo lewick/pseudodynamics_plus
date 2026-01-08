@@ -1,4 +1,4 @@
-[![Docs](https://pseudodynamics-plus.readthedocs.io/en/latest/index.html)](https://pseudodynamics-plus.readthedocs.io/en/latest/index.html)
+<!-- [![Docs](https://pseudodynamics-plus.readthedocs.io/en/latest/index.html)](https://pseudodynamics-plus.readthedocs.io/en/latest/index.html) -->
 
 # Pseudodynamics+
 Physics Informed Neural Network based method for solving the single-cell population dynamics.   
