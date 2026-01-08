@@ -79,6 +79,14 @@ autodoc_mock_imports = ["moscot"]
 napoleon_google_docstring = False
 napoleon_numpy_docstring = True
 
+autodoc_default_options = {
+    'inherited-members': False,   # <-- This is the key line
+    'show-inheritance': True,     # Optional: Shows the class it inherits from without listing its methods
+    'members': True,
+    # ... your other options
+}
+
+
 #default_role = "literal"
 
 
@@ -115,11 +123,11 @@ intersphinx_mapping = {
     "scipy": ("https://docs.scipy.org/doc/scipy/reference/", None),
     "sklearn": ("https://scikit-learn.org/stable/", None),
     "scanpy": ("https://scanpy.readthedocs.io/en/stable/", None),
-    "jax": ("https://jax.readthedocs.io/en/latest/", None),
+    # "jax": ("https://jax.readthedocs.io/en/latest/", None),
     # "torch": ("https://pytorch.org/docs/master/", None),
-    "plottable": ("https://plottable.readthedocs.io/en/latest/", None),
-    "scvi-tools": ("https://docs.scvi-tools.org/en/stable/", None),
-    "mudata": ("https://mudata.readthedocs.io/en/latest/", None),
+    # "plottable": ("https://plottable.readthedocs.io/en/latest/", None),
+    # "scvi-tools": ("https://docs.scvi-tools.org/en/stable/", None),
+    # "mudata": ("https://mudata.readthedocs.io/en/latest/", None),
 }
 
 # List of patterns, relative to source directory, that match files and
@@ -227,6 +235,14 @@ nitpick_ignore = [
     # you can add an exception to this list.
 ]
 
+
+def skip_inherited_members(app, what, name, obj, skip, options):
+    # Skip if it's a method and is inherited (not defined in the class's __dict__)
+    if hasattr(obj, '__objclass__') or (hasattr(obj, '__module__') and obj.__module__ != 'pseudodynamics.models'):
+        return True  # Skip this member
+    return skip  # Otherwise, use the default behavior
+
+    
 
 def setup(app):
     """App setup hook."""

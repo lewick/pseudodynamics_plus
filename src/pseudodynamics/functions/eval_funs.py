@@ -24,8 +24,8 @@ def forward_get_params(pde_model, DataSet, t_ts=None, s_ts=None, timepoint_label
 
     Args:
     ----------
-        pde_model : nn.Module, sub-class of PINN.models.pde_params_base
-        DataSet : sub-class of `PINN.readers.HighdimAnnDS` 
+        pde_model : nn.Module, sub-class of pdp.models.pde_params_base
+        DataSet : sub-class of `pdp.readers.HighdimAnnDS` 
         t_ts : None , time point tensor
         s_ts : None , cell state tensor
     """
@@ -139,8 +139,8 @@ def continuous_params(pde_model, DataSet,
 
     Args:
     ----------
-        pde_model : nn.Module, sub-class of PINN.models.pde_params_base
-        DataSet : sub-class of `PINN.readers.HighdimAnnDS` 
+        pde_model : nn.Module, sub-class of pdp.models.pde_params_base
+        DataSet : sub-class of `pdp.readers.HighdimAnnDS` 
         param : str, one of ['g', 'v', 'D', 'u']
         n_interval : number of intermediate point between two timepoints
         groupby_key : str, aggregate the predicted param according to cell type or cluster, one of the obs_key of the adata
@@ -212,8 +212,8 @@ def density_shortterm_simulation(pde_model, DataSet, timepoint_idx=None, time_sp
 
     Args:
     ----------
-        pde_model : nn.Module, sub-class of PINN.models.pde_params_base
-        DataSet : sub-class of `PINN.readers.HighdimAnnDS` 
+        pde_model : nn.Module, sub-class of pdp.models.pde_params_base
+        DataSet : sub-class of `pdp.readers.HighdimAnnDS` 
         timepoint_idx : list of index , default the full timepoints defined in DataSet
         time_span : int , how many step of the timepoint index
         return_all : bool, if return the other output
@@ -356,7 +356,7 @@ def project_params_to_pseudotime(adata, params, param_names='g v2', timepoints=N
     Example
     -------
     >>> nbins =30
-    >>> y =  PINN.tl.project_params_to_pseudotime(adata,
+    >>> y =  pdp.tl.project_params_to_pseudotime(adata,
                                     params = adata.obs["vnorm_v1"].values.reshape(1,-1), 
                                     param_names = 'v_v1',
                                     timepoints = adata.uns['pop']['t'][[0]],
