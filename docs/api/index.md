@@ -10,9 +10,11 @@ import pseudodynamics as pdp
 :maxdepth: 2
 
 config
-preprocessing
+reader
 models
+tools
 plotting
+detest
 ```
 
 <!-- ## Config

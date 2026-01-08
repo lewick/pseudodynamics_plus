@@ -1,7 +1,7 @@
 # Plotting
 
 ```{eval-rst}
-.. module:: pseudodynamics.pl
+.. module:: pseudodynamics.plotting_fns
 .. currentmodule:: pseudodynamics
 
 .. autosummary::

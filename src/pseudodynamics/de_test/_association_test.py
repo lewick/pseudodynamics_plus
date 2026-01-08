@@ -20,7 +20,7 @@ from functools import partial
 from ._base import logger
 
 class AssociationTest:
-    """Python implementation of tradeSeq associationTest"""
+    r"""Python implementation of tradeSeq associationTest"""
     
     def __init__(self, gam_fit, lineage_names):
         self.gam_fit = gam_fit
