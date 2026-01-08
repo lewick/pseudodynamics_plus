@@ -48,6 +48,7 @@ def compute_guassian_u(Cellstate_ay, dimension=10):
     Estimating the density high dimensional cell state coordinates and its change by experimental time.
     The density estimation function is 
     
+    
     Args
     -------
     Cellstate_ay : ndarray of shape (N_cell, dimension), the high dimensional cell state representation, i.e. PC, Diffusion Map (DM) , SCVI-latent
@@ -83,6 +84,8 @@ def compute_guassian_u(Cellstate_ay, dimension=10):
 def boundary_density_at(D, t_b, x, density_fn:callable=None):
     """
     Evaluate the cell density at time point `t_b` using the pre-defined density function
+
+    
     Args
     -------
     D: the extracted data dictionary
@@ -117,6 +120,8 @@ def boundary_density_at(D, t_b, x, density_fn:callable=None):
 def evaluate_1d_density(D, t_b, x):
     """
     extract the cell density at time point `t_b`, this function works for 1 dimensional data
+    
+    
     Args
     -------
     D: the extracted data dictionary
@@ -166,6 +171,7 @@ def evaluate_1d_density(D, t_b, x):
 def evaluate_2d_mesh_density(D, t_b, x):
     """
     extract the cell density at time point `t_b`. this function works for 2 dimensional mesh grid 
+    
     Args
     -------
     D: the extracted data dictionary
@@ -287,6 +293,7 @@ def evaluate_u_ds(cid, cellstate, u_tb, delta_s, den_fn, scaler):
     r"""
     func for multi-process density estimate inside time-point loop
 
+    
     Args
     ------
     cid: cell index , numerical index, not cell barcode
@@ -443,6 +450,7 @@ def sample_deltax_from_transition(adata, transition_matrix,xkey=None, pseudotime
     the Key function defines the delta-X sampling process 
     given the transition matrix, then sample the delta x
 
+    
     Args:
     -----
     transition_matrix : nd array of shape (n_cell, n_cell), i.e : cell rank transition matrix
@@ -611,6 +619,7 @@ def make_coord_adata(adata, cellstate_key, n_dimension, v = None):
     construct adata based on cellstate coodinates from expression matrix based adata
     the new adata is mainly for visualizing v
 
+    
     Args:
     -----------
     adata : anndata, the source anndata to extract info
@@ -699,6 +708,7 @@ def get_pseudobulk(adata, cellstate_key, n_dimension=None, pseudobulk_key='pseud
     r"""
     generate pseudo-bulk (meta-cell) using super-high resolution clustering
 
+    
     Args
     -----------
     adata_DM : adata with DM was X
