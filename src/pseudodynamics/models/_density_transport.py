@@ -36,16 +36,13 @@ class Density_Transfer(nn.Module):
     >>> pde_model = models.pde_params.load_from_checkpoint(model_ckpt)
     >>> pde_model = pde_model.to(device)
     >>> DT = models.Density_Transfer(pde_model)
-
     >>> # prepare initial condition
     >>> integrate_time = np.linspace(t/t0, timepoint_tx_days[it+1]/t0 ,n_interval+1) / pde_model.time_scale_factor
     >>> cell_index = ?
     >>> u0 = Dataset.u_b[it, cell_index].float().to(device)
     >>> s0 = torch.from_numpy(Dataset.cellstate[cell_index]).float().to(device)
-
     >>> # perform simulation
     >>> S_trajectory = DT.cellstate_drift(s0, integrate_time)
-
     >>> # infer dynamic transport map
     >>> Tmaps_t, Tmaps_t_norm = DT.transition_by_batch(s0, u0, integrate_time, n_interval=n_interval, ncell=ncell)
     """
@@ -252,6 +249,37 @@ class Density_Transfer(nn.Module):
 class DT_analysis:
     r"""
     class to analyze the density transport result from saved files
+
+    Args
+    ------
+    adata : anndata
+        the single cell type object with annotaion
+    result_dir : Path
+        the abs path to the result directory where Density_Transfer results are saved
+    celltype : str
+        the cell type to analyze
+
+
+    Example
+    ------
+    >>> dta_obj = DT_analysis(adata, result_dir, celltype)
+    >>> TM = DT.TM_dict[time]
+    >>> celltypes = ['Ery','HSC','Int prog','Meg']
+    >>> ct_prop = dta_obj.density_by_celltype_step(celltypes)
+    >>> agg_density = dta_obj.density_by_celltype_step(celltypes, step=-1, norm=False)
+    >>> clusters, row_linkage, reorded_i = DT.hierarchical_clustering(density_matrix=laststep_TM,
+                                                    n_clusters=n_clusters, 
+                                                    log_normalize=log_normalize)
+    >>> g = DT.clustermap(  
+                density_matrix = laststep_TM,
+                clusters = clusters, 
+                row_linkage = row_linkage, 
+                celltypes = tick_labels,
+                cmap = 'viridis',
+                cbar_pos = [1, 0.4, 0.03,0.2],
+                figsize = (7,8),
+                log_normalize=True
+                )
     """
     def __init__(self, adata, result_dir, celltype=None):
         self.adata = adata

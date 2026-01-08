@@ -20,7 +20,21 @@ from functools import partial
 from ._base import logger
 
 class AssociationTest:
-    r"""Python implementation of tradeSeq associationTest"""
+    r"""Python implementation of tradeSeq associationTest
+    
+    Args
+    -----
+    gam_fit : dict
+        The result of pdp.de_test.fitGAM
+    lineage_names : list
+        the names of lineages, lineage can be determined by tools like palantire or cellrank
+
+    Example
+    -----
+    >>> gam_fit = de_test.run_fitGAM_parallel(expression_matrix, cell_time, genes, n_cores=10)
+    >>> test = de_test.AssociationTest(gam_fit, ['Ery'])
+    >>> result_lin_day = test.association_test(restrcited_pseudotime=pseudotime_range)
+    """
     
     def __init__(self, gam_fit, lineage_names):
         self.gam_fit = gam_fit
@@ -352,58 +366,3 @@ def run_association_test_parallel(gam_fit, pseudotime_range, chunk_size=10, n_co
 
     # Combine results
     return pd.concat(chunk_results)
-
-def Tradeseqpy_associationTest(gam_fit, l2fc=0, contrastType='end'):
-    """
-    code from tradeSeq-py by Weiler P
-
-    Performs an association test to identify genes changing along pseudotime.
-
-    Parameters:
-        gam_fit (dict): Output from fitGAM
-        l2fc (float): Log2 fold change threshold
-        contrastType (str): Type of contrast ('end' or 'linear')
-
-    Returns:
-        pd.DataFrame: DE results
-    """
-    results = []
-    models = gam_fit['models']
-    pseudotime = gam_fit['pseudotime']
-
-    for gene_idx in models:
-        model_data = models[gene_idx]
-        res = model_data['model']
-        expr = model_data['expr']
-        
-        # Skip if no model was fitted
-        if res is None:
-            logFC = 0
-            pval = 1.0
-        else:
-            pred = model_data['pred_func'](pseudotime)
-            # Simple t-test between early and late cells
-            mid_time = np.median(pseudotime)
-            early = pseudotime < mid_time
-            late = pseudotime >= mid_time
-            
-            # Handle empty groups
-            if not np.any(early) or not np.any(late):
-                logFC = 0
-                pval = 1.0
-            else:
-                logFC = np.log2(pred[late].mean() / (pred[early].mean() + 1e-5))
-                pval = ttest_1samp(logFC, 0)[1] if logFC != 0 else 1.0
-                
-        results.append({
-            'gene': gene_idx,
-            'log2FoldChange': logFC,
-            'pvalue': pval
-        })
-
-    df = pd.DataFrame(results).set_index('gene')
-    return df
-
-
-
-
