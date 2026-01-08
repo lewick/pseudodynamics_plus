@@ -16,26 +16,33 @@ from ._base_Dataset import AnnDataset, MeshGrid, Processed_baseDS
 
 
 class HigDim_AnnDS(AnnDataset):
+    r"""
+    High Dimensional Cell state Dataset for trajectory indepdent modeling
+
+    Args
+    --------
+    n_repeat :  int 
+        the output file path from script
+    nearby_cellstate : int
+            the number of near (cell state)
+    norm_Time : boolen 
+        log-normalize the real timepoint 
+    AnnData : annData, 
+        the single cell object
+    cellstate_key : str 
+        the obsm key, the lower dimension representation on which we will use to compute density
+    timepoint_key : str
+        the obs key that indicate the experimental time the cells are collected from
+    pop_dict : dict
+        the dictionary we use to pass population statistics including collected timepoint, mean ,variation
+    log_transform : bool
+        default False, whether the population size will be log transformed to reduce the magnitude of the data
+    base_cellstate : np.ndarray
+        the space to evaluate the density
+
+    """
     def __init__(self, AnnData, cellstate_key='cellstate', timepoint_key='timepoint_tx_days', timepoint_idx=None, n_dimension=5, knn_volume= False, nearby_cellstate=1, norm_time=False, deltax_key=None, density_funs=None, kde_kws={}, base_cellstate=None,  pop_dict=None, n_grid=300, collocation_points=600,  log_transform=False ,resampling_indensity=0.5, resampling_rate=0.5):
-        r"""
-        High Dimensional Cell state Dataset for trajectory indepdent modeling
-
-        Args
-        --------
-        n_repeat : the output file path from script
-        nearby_cellstate : the number of near (cell state)
-        norm_Time : log-normalize the real timepoint 
-
-        Other params from AnnDataset:
-        --------
-        AnnData : annData, the scanpy 
-        cellstate_key : str, the obsm key, the lower dimension representation on which we will use to compute density
-        timepoint_key : str, the obs key that indicate the experimental time the cells are collected from
-        pop_dict : dict, the dictionary we use to pass population statistics including collected timepoint, mean ,variation
-        log_transform : bool, default False, whether the population size will be log transformed to reduce the magnitude of the data
-        base_cellstate : np array, the space to evaluate the density
-
-        """
+        
         super().__init__(AnnData, cellstate_key=cellstate_key, timepoint_key=timepoint_key, pop_dict=pop_dict, n_grid=n_grid, collocation_points=collocation_points,  log_transform=log_transform, norm_time=norm_time, resampling_indensity=resampling_indensity, resampling_rate=resampling_rate)
         
         self.knn_volume = knn_volume
@@ -267,22 +274,43 @@ class HigDim_AnnDS(AnnDataset):
 
 
 class TwoTimpepoint_AnnDS(HigDim_AnnDS):
+    r"""
+    Dataset for high dimensional cellstate
+    Each batch returns the cellstates, and their density in two consecutive timepoints
+    
+    Args
+    -----
+    AnnData : annData, 
+        the single cell dataset 
+    cellstate_key : str, 
+        the obsm key, the lower dimension representation on which we will use to compute density
+    timepoint_key : str, 
+        the obs key that indicate the experimental time the cells are collected from
+    log_transform : bool, 
+        default True, whether the population size will be log transformed to reduce the magnitude of the data
+    n_repeat : int
+            the output file path from script
+    nearby_cellstate : int
+        the number of near (cell state)
+    norm_Time : bool
+        log-normalize the real timepoint 
+    split : str, 
+        train, val or test
+    knn_volume : bool
+        whether to use the volume of the knn graph to rescale the density
+
+
+    Examples
+    -----
+    >>> import pseudodynamics as pdp
+    >>> from pseudodynamics import reader
+    >>> config = pdp.ExperimentConfig(config=config_path)
+    >>> DS_sub = pdp.reader.TwoTimpepoint_AnnDS(AnnData=adata, split = 'train',
+                            **config.dataset_config
+                            )
+    """
     def __init__(self, AnnData, split='train', cellstate_key='cellstate', timepoint_key='timepoint_tx_days', timepoint_idx=None, n_dimension=5, knn_volume= False,  batchsize=200,  norm_time=False, deltax_key=None, density_funs=None, kde_kws={}, nearby_cellstate=1, base_cellstate=None,  pop_dict=None, n_grid=300, collocation_points=600,  log_transform=False ,resampling_indensity=0.5, resampling_rate=0.5):
-        r"""
-        Dataset for high dimensional cellstate
-        Each batch returns the cellstates, and their density in two consecutive timepoints
         
-        Args
-        --------
-        AnnData : annData, the scanpy 
-        cellstate_key : str, the obsm key, the lower dimension representation on which we will use to compute density
-        timepoint_key : str, the obs key that indicate the experimental time the cells are collected from
-        log_transform : bool, default True, whether the population size will be log transformed to reduce the magnitude of the data
-        n_repeat : the output file path from script
-        nearby_cellstate : the number of near (cell state)
-        norm_Time : log-normalize the real timepoint 
-        knn_volume : boolen, whether to use the volume of the knn graph to rescale the density
-        """
         super().__init__(AnnData, cellstate_key=cellstate_key, timepoint_key=timepoint_key, timepoint_idx=timepoint_idx, knn_volume=knn_volume, n_dimension=n_dimension, nearby_cellstate=nearby_cellstate, norm_time=norm_time, deltax_key=deltax_key, density_funs=density_funs, kde_kws=kde_kws, base_cellstate=base_cellstate,  pop_dict=pop_dict, n_grid=n_grid, collocation_points=collocation_points,  log_transform=log_transform ,resampling_indensity=resampling_indensity, resampling_rate=resampling_rate)
         self.batchsize = batchsize
         self.u_b = self.u_b.reshape(self.n_timepoint, -1)

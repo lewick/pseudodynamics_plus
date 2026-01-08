@@ -456,26 +456,50 @@ class pde_params_base(pl.LightningModule):
             return (ds, growth_local-drift, ds, du)
 
 class pde_params(pde_params_base):
+    r"""
+    Default model : PINN prediction + NeuralODE simulation to estimate parameters
+
+    Args
+    --------
+    channel : list 
+        the number of MLP channels of the Behavior function
+    [g, v, D]_channel : list
+        the number of MLP channels of the Behavior function
+    collapse_[D,v] : bool
+        merge the multi-channel output into 1 channel, which controls the complexity of the pde term.
+    time_sensitive : bool
+        whether to use time and state-dependent paramter (dynamic mode) or state-dependent paramter (constant mode)
+    u_theta : torch.nn.Module
+        the neural netowrk surrogate of u
+    lr: float, 
+        the learning rate
+    optim_class : str, 
+        the optimizer used
+    activation_fn: str,
+        activation function for the neural network
+    weight_intensity: float,
+        important ! the weight for emphasizing the denser cell. Lower values tend to weight each cell equally.
+    R_weight : float,
+        the weight for penalizing for the PINN residule loss
+    pop_weight : float, 
+        the weight for penalizing population
+    deltax_weight : float,
+        the weight for penalizing how v is similar to the sampled delta X
+    D_penalty : float , 
+        default None the weight for penalizing D
+
+
+    Examples
+    --------
+    >>> import pseudodynamics as pdp
+    >>> from pseudodynamics import models
+    >>> config = pdp.ExperimentConfig(config=config_path)
+    >>> pde_model = models.pde_params.load_from_checkpoint(
+                    checkpoint_path = tompos_config.find_lastest_ckpt(), 
+                    map_location='cpu')
+    """
     def __init__(self, channels, growth_weight=None, collapse_D = True, collapse_v = False, g_channels=None, v_channels=None, D_channels=None, time_sensitive=True, lr=3e-4, ode_tol=1e-4, activation_fn:Union[str, list] = 'Tanh', R_weight = None, deltax_weight = None, D_penalty = None, weight_intensity=None, time_scale_factor=None, pop_weight=None):
-        r"""
-        default model : PINN prediction + NeuralODE simulation to estimate parameters
-
-        Arguments:
-        -------------
-        channel : the number of MLP channels of the Behavior function
-        [g, v, D]_channel : the number of MLP channels of the Behavior function
-        collapse_[D,v] : merge the multi-channel output into 1 channel, 
-                         which controls the complexity of the pde term.
         
-        kwargs 
-        -------
-        u_theta : the neural netowrk surrogate of u
-        lr: float, the learning rate
-        optim_class : str, the optimizer used
-        D_penalty : float , default None the weight for penalizing D
-
-
-        """
         super().__init__(channels=channels, collapse_D = collapse_D, collapse_v = collapse_v, g_channels=g_channels, v_channels=v_channels, D_channels=D_channels, time_sensitive=True, lr=lr, ode_tol=ode_tol, activation_fn=activation_fn, D_penalty = D_penalty, weight_intensity=weight_intensity, deltax_weight=deltax_weight)
         self.save_hyperparameters()
         
