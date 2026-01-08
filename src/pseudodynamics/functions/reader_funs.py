@@ -51,12 +51,12 @@ def compute_guassian_u(Cellstate_ay, dimension=10):
     
     Args
     -------
-    Cellstate_ay : ndarray of shape (N_cell, dimension), the high dimensional cell state representation, i.e. PC, Diffusion Map (DM) , SCVI-latent
-    dimension : control the nubmer of the first few dimension to use for density esitmation
+        Cellstate_ay : ndarray of shape (N_cell, dimension), the high dimensional cell state representation, i.e. PC, Diffusion Map (DM) , SCVI-latent
+        dimension : control the nubmer of the first few dimension to use for density esitmation
 
     Return
     -------
-    gussian_kde_u : ndarray of shape (N_cell, 1), the density of each cell 
+        gussian_kde_u : ndarray of shape (N_cell, 1), the density of each cell 
 
     Example
     ------
@@ -124,13 +124,13 @@ def evaluate_1d_density(D, t_b, x):
     
     Args
     -------
-    D: the extracted data dictionary
-    t_b : the boundary time point
-    x : the grided cell state coordiante
+        D: the extracted data dictionary
+        t_b : the boundary time point
+        x : the grided cell state coordiante
     
     Return
     -------
-    u_t : smoothed cell density over s and adjusted by pop size
+        u_t : smoothed cell density over s and adjusted by pop size
     """
     
     assert t_b in D['pop']['t'], "`t_b` is not the observed time point"
@@ -174,13 +174,13 @@ def evaluate_2d_mesh_density(D, t_b, x):
     
     Args
     -------
-    D: the extracted data dictionary
-    t_b : the boundary time point
-    x : the mesh grided cell state s1, s2
+        D: the extracted data dictionary
+        t_b : the boundary time point
+        x : the mesh grided cell state s1, s2
     
     Return
     -------
-    u_t : smoothed cell density over s and adjusted by pop size
+        u_t : smoothed cell density over s and adjusted by pop size
     """
     
     assert t_b in D['pop']['t'], "`t_b` is not the observed time point"
@@ -296,16 +296,16 @@ def evaluate_u_ds(cid, cellstate, u_tb, delta_s, den_fn, scaler):
     
     Args
     ------
-    cid: cell index , numerical index, not cell barcode
-    cellstate : array [n_cell, n_dim] high-dimensional coordinate (representation) of all cells
-    u_tb : array [n_cell,] , the density of each cell at a timepoint
-    delta_s : [n_dim, ] the small perturbation add to cell state
-    den_fn : callable([n_dim, n_cell]) ,  the density estimation function
-    scaler : density scaler , normlized 
+        cid: cell index , numerical index, not cell barcode
+        cellstate : array [n_cell, n_dim] high-dimensional coordinate (representation) of all cells
+        u_tb : array [n_cell,] , the density of each cell at a timepoint
+        delta_s : [n_dim, ] the small perturbation add to cell state
+        den_fn : callable([n_dim, n_cell]) ,  the density estimation function
+        scaler : density scaler , normlized 
 
     Return
     ------
-    the duds : [n_cell, n_dim] , the density chagne along each dimension
+        the duds : [n_cell, n_dim] , the density chagne along each dimension
     """
     # cs = cellstate[cid]
     # u_t = u_tb[cid]
@@ -323,7 +323,7 @@ def evaluate_u_ds(cid, cellstate, u_tb, delta_s, den_fn, scaler):
     return np.concatenate(du_dcs_cell, axis=1)
 
 def augment_cdf(x, x_a, y):
-    """
+    r"""
     This function takes a CDF defined on a grid x and augments it to a finer grid x_a by duplicating the CDF values within intervals defined by x. zeros or ones accordingly were added for where x_a values are outside the range of x
     """
     
@@ -353,7 +353,7 @@ def augment_cdf(x, x_a, y):
 
 
 def Lambda1(epoch, gamma=0.2):
-    """
+    r"""
     lr scheduler rule 1, quickly decay then steady
     """
     if epoch >= 5 :
@@ -394,13 +394,16 @@ def traverse_neighbor(connectivities, k, knn_idx):
     return knn_idx_d_plus1
 
 def _sample_by_distance(dist_array, candidate_idx, alpha=None, repeat=1):
-    """
+    r"""
     based on the knn distance, sample the closest cell 
         P ~ (1 - distance)
-    dist_array : ndarray, distance from all other cells to cell i
-    candidate_idx : the index of knn / or cansidered neighbor cells
-    alpha: parameter to adjust uncertainty, the lower the more uncertrain
-    repeat: the number of cells to sample each time
+
+    Args
+    ------
+        dist_array : ndarray, distance from all other cells to cell i
+        candidate_idx : the index of knn / or cansidered neighbor cells
+        alpha: parameter to adjust uncertainty, the lower the more uncertrain
+        repeat: the number of cells to sample each time
     """
     alpha = 1 if alpha is None else alpha
 
@@ -453,13 +456,13 @@ def sample_deltax_from_transition(adata, transition_matrix,xkey=None, pseudotime
     
     Args:
     -----
-    transition_matrix : nd array of shape (n_cell, n_cell), i.e : cell rank transition matrix
-    xkey : obsm_key or layer_key of the adata, from which space we sample the delta x
+        transition_matrix : nd array of shape (n_cell, n_cell), i.e : cell rank transition matrix
+        xkey : obsm_key or layer_key of the adata, from which space we sample the delta x
 
 
     Return:
     -----
-    delta_X, neighbor_ls
+        delta_X, neighbor_ls
 
     Example:
     -----
@@ -509,7 +512,7 @@ def sample_deltax_from_knn(adata, max_degree=1, k=None, xkey=None, pseudotimekey
 
     Return:
     -----
-    delta_X, neighbor_ls
+        delta_X, neighbor_ls
     """
 
     connectivities = adata.obsp['connectivities'].copy()
@@ -622,10 +625,10 @@ def make_coord_adata(adata, cellstate_key, n_dimension, v = None):
     
     Args:
     -----------
-    adata : anndata, the source anndata to extract info
-    cellstate_key : which representation to use
-    n_dimesion : the number of first dimeion of cellstate to use
-    v : ndarray of shape [t, n_dim], default none
+        adata : anndata, the source anndata to extract info
+        cellstate_key : which representation to use
+        n_dimesion : the number of first dimeion of cellstate to use
+        v : ndarray of shape [t, n_dim], default none
     """
     # create new adata with DM coordinate as X
     cellstate = adata.obsm[cellstate_key][:,:n_dimension]
@@ -665,13 +668,13 @@ def super_resolution_pseudobulk(adata, resolution=200, n_pseudobulk=None, key_ad
     
     Augments
     --------
-    n_pseudobulk : int, defult None -> adata.shape[0] / 20, the number of pseudo bulk to end with
-    pseudobulk_key : str, default 'pseudo_bulk'
-    resolution : int, default None -> 40, the resolution pass to leiden algorithm
+        n_pseudobulk : int, defult None -> adata.shape[0] / 20, the number of pseudo bulk to end with
+        pseudobulk_key : str, default 'pseudo_bulk'
+        resolution : int, default None -> 40, the resolution pass to leiden algorithm
 
     Return
     --------
-    adata with pseudo bulk key
+        adata with pseudo bulk key
     """
     if n_pseudobulk is None:
         n_pseudobulk = adata.shape[0] / 20 
@@ -711,12 +714,12 @@ def get_pseudobulk(adata, cellstate_key, n_dimension=None, pseudobulk_key='pseud
     
     Args
     -----------
-    adata_DM : adata with DM was X
-    pseudobulk_key : str, a obs key to specify the pseudobulk_key to use 
+        adata_DM : adata with DM was X
+        pseudobulk_key : str, a obs key to specify the pseudobulk_key to use 
 
     Return 
     -----------
-    pdata : anndata with [n_pseudobulk, n_dimension]
+        pdata : anndata with [n_pseudobulk, n_dimension]
 
     Example
     -----------
