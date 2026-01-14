@@ -14,7 +14,7 @@ PACKAGE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT_DIR = PACKAGE_DIR.parent.parent
 
 # Expose the variable for the user
-main_dir = str(PROJECT_ROOT_DIR)
+main_dir = str(PROJECT_ROOT_DIR) if str(PROJECT_ROOT_DIR).endswith('/') else str(PROJECT_ROOT_DIR) + "/"
 
 class ExperimentConfig:
     """Records and manages experiment configuration settings."""

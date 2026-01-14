@@ -1,3 +1,4 @@
+import os
 import torch
 import numpy as np
 import pandas as pd
@@ -244,8 +245,36 @@ def compute_mellon_u(adata, cellstate_key, timepoint_key, n_dimension=None):
         density_funs.append(model_t)
     return np.stack(log_u), density_funs
 
-def compute_mellon_timesense_u(adata, cellstate_key, timepoint_key, n_dimension=None):
+def compute_mellon_timesense_u(adata, cellstate_key, timepoint_key, ls_time_estimate=None, n_dimension=None):
+    r"""
+    wrapping mellon time-sense density
+
+    Args:
+    -------
+    adata : the cells from which for estimating density
+    cellstate_key : the low dimensional representation
+    timepoint_key : the obs key that record tiempoint, dtype should be int or float
+    ls_time_estimate : float, the length scaler for time
+    n_dimension : [int, None] ,
     
+    Returns:
+    -------
+    log_u : np.array of shape (n_timepoints, n_cells), the log density
+    density_predictor : trained `mellon.TimeSensitiveDensityEstimator.predict`
+
+
+    Example:
+    -------
+    >>> import pseudodynamics as pdp
+    >>> # a simple example for estimating density of a specific condition
+    >>> adata_c1 = adata[adata.obs['condition'] == 'condition_1'].copy()
+    >>> timepoints = adata_c1.obs['time'].unique()
+
+    >>> # time ls for exploration
+    >>> ls_time_estimate = 1.5 * np.mean(np.diff(np.sort(timepoints)))
+    >>> # timesensitive estimator
+    >>> log_u, estimator = pdp.tl.compute_mellon_timesense_u(adata_c1, 'DM_EigenVectors', 'time',   ls_time_estimate)
+    """
     
     try:
         model_t = mellon.DensityEstimator()
@@ -259,15 +288,22 @@ def compute_mellon_timesense_u(adata, cellstate_key, timepoint_key, n_dimension=
     density_funs = []
     log_u = []
 
-    ls_time_estimate = 1.5 * np.mean(np.diff(np.sort(X_times.unique())))
+    if ls_time_estimate is None:
+        ls_time_estimate = 1.5 * np.mean(np.diff(np.sort(X_times.unique())))
 
     print(ls_time_estimate)
 
     # Initialize the time-sensitive density estimator with an intrinsic dimensionality of 2
-    t_est = mellon.TimeSensitiveDensityEstimator(d=2, ls_time=ls_time_estimate)
+    try:
+        t_est = mellon.TimeSensitiveDensityEstimator(d=2, ls_time=ls_time_estimate)
+        # Fit the estimator to the data
+        t_est.fit(X, X_times)
 
-    # Fit the estimator to the data
-    t_est.fit(X, X_times)
+    except RuntimeError:
+        os.environ['JAX_PLATFORMS'] = 'cpu'
+        t_est = mellon.TimeSensitiveDensityEstimator(d=2, ls_time=ls_time_estimate)
+        t_est.fit(X, X_times)
+
 
     for i, t in enumerate(sorted(adata_tb.unique())):
         print('estimating density for time ', t)
@@ -275,7 +311,7 @@ def compute_mellon_timesense_u(adata, cellstate_key, timepoint_key, n_dimension=
         # Save the predictor for later density evaluations
         density_predictor = t_est.predict
 
-        log_density = model_t.predict(X,t)
+        log_density = density_predictor(X,t)
         
         log_u.append(log_density)
 

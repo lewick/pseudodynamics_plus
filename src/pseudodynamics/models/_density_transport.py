@@ -103,6 +103,8 @@ class Density_Transfer(nn.Module):
         # step 1. cell state simulation
         s_traj_ay = self.cellstate_drift(s0, integrate_time)
 
+        delta_t = integrate_time[1] - integrate_time[0]
+
         # step 2. density simulation
         u0_by_time = []
         for ic in range(0, s0.shape[0], ncell*4):
@@ -147,7 +149,8 @@ class Density_Transfer(nn.Module):
                 leftover_u_local = []
 
                 # step 3.2
-                for i, t in enumerate(integrate_time[1:n_interval-offset+1]):
+                # for i, t in enumerate(integrate_time[1:n_interval-offset+1]):
+                for i in range(n_interval-offset):
 
                     s_source = s_traj[i].requires_grad_().to(device) # s_i
                     s_target = s_traj[i+1].requires_grad_().to(device) # s_{i+1}
@@ -160,6 +163,7 @@ class Density_Transfer(nn.Module):
                     u_target = torch.zeros_like(u_source).to(device)
 
                     # integrate the flow within small timespan
+                    t = tn1 + delta_t
                     s_last, u_stay, s_next, u_flow = odeint_adjoint(self, 
                                     y0= (s_source, u_source, s_target, u_target), 
                                     t = torch.tensor([tn1, t]).float().to(device),
@@ -351,6 +355,7 @@ class DT_analysis:
         if copy:
             self.celltype_trajectory = celltype_trajectory 
         else:
+            self.ct_prop = pd.concat(celltype_trajectory.values())
             return celltype_trajectory
             
     def density_by_celltype_step(self, celltypes, step=-1, norm=True):
@@ -647,3 +652,23 @@ class DT_analysis:
         ax.set_ylabel("proportion of clusters")
 
         return fig, ax
+    
+    def vis_Tmap(self, TM, ax=None):
+
+        trui = np.triu_indices_from(TM, k=1)
+        TM[trui] = np.nan
+
+        if ax is None:
+            fig, ax = plt.subplots(figsize=(4,4))
+
+        ms = ax.matshow(TM, cmap='viridis' )
+
+        ax.set_yticks([0,2, 5, 9])
+        ax.set_yticklabels([r"$t_1$", r"$t_3$", r"$\vdots$", r"$t_n$"])
+        
+        ax.tick_params(top=False, labeltop=False, bottom=True, labelbottom=True)
+        
+        ax.set_xticks([0,2, 5, 9])
+        ax.set_xticklabels([r"$s_1$", r"$s_3$", r"$...$", r"$s_n$"])
+
+        return ax

@@ -3,6 +3,7 @@ from . import functions as tl
 from . import models
 from ._config import *
 from pathlib import Path
+from . import reader
 
 
 # We get the directory containing this file (the 'PINN' package directory).
