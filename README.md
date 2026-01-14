@@ -1,5 +1,4 @@
 
-
 # Pseudodynamics+
 Physics Informed Neural Network based method for solving the single-cell population dynamics.   
 For each cell, we estiamte the dynamic parameter of the cell proliferation, differentiation and diffusion.

@@ -1,5 +1,4 @@
 ```{include} ../README.md
-
 ```
 
 ## Important resources
@@ -22,7 +21,7 @@
 
 
     .. grid-item-card:: Tutorials
-        :link: tutorials/index
+        :link: tutorials
         :link-type: doc
 
         Check out how to use :mod:`pseudodynamics+`.
@@ -34,9 +33,10 @@
 :maxdepth: 3
 :titlesonly: true
 
-api.md
-tutorials.md
-references.md
+about/index
+api/index
+tutorials
+references
 
 
 ```

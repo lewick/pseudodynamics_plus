@@ -23,17 +23,24 @@ logger = logging.getLogger(__name__)
 
 
 def fitGAM(count_matrix, cell_time, n_knots=7, cell_weights=None, gene_symbol=None):
-    """
+    r"""
     Fits a GAM model per gene using pseudotime.
 
-    Parameters:
-        count_matrix (np.ndarray): Gene expression matrix (cells x genes)
-        cell_time (np.ndarray): Pseudotime values for cells
-        n_knots (int): Number of knots for spline fitting
-        cell_weights (np.ndarray): Optional weights for each cell
+    Args:
+    ------
+    count_matrix : np.ndarray
+        Gene expression matrix (cells x genes).    
+    cell_time : np.ndarray
+        Pseudotime values for cells.  
+    n_knots: int 
+        Number of knots for spline fitting.  
+    cell_weights :  np.ndarray
+        Optional weights for each cell.  
 
     Returns:
-        dict: Dictionary containing fitted models and metadata
+    ------
+    GAMResult: dict
+        Dictionary containing fitted models and metadata.  
     """
     if cell_weights is None:
         cell_weights = np.ones(len(cell_time))

@@ -2,8 +2,8 @@
 
 ## preprocessing
 ```{toctree}
-:hidden: true
-:maxdepth: 2
+:maxdepth: 1
+:titlesonly:
 notebooks/prepare_training_data
 notebooks/observed_density(optional)
 ```
@@ -11,16 +11,16 @@ notebooks/observed_density(optional)
 
 ## training setup
 ```{toctree}
-:hidden: true
-:maxdepth: 2
+:maxdepth: 1
+:titlesonly:
 
 notebooks/setup_config
 ```
 
 ## analysing single cell dynamics
 ```{toctree}
-:hidden: true
-:maxdepth: 2
+:maxdepth: 1
+:titlesonly:
 
 notebooks/evaluate_parameters
 ```

@@ -17,8 +17,34 @@ from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
 from ..plotting_fns import density_plot, param_plot
 
 class Density_Transfer(nn.Module):
-    """
+    r"""
     Wrap up the density transfer function into a nn Module, for calling odeint_adjoint
+
+    Args
+    -----
+    pde_model: nn.Modules from pdp.models
+        the pde model (pde_params, log_pde_params)
+    stochastic: bool, default False
+        whether to add noise to the cell state simulation
+    noise_schedule : callable, default None
+        the noise schedule for the cell state
+    n_repeat : int
+        the number of times to repeat the cell state simulation
+
+    Example
+    -----
+    >>> pde_model = models.pde_params.load_from_checkpoint(model_ckpt)
+    >>> pde_model = pde_model.to(device)
+    >>> DT = models.Density_Transfer(pde_model)
+    >>> # prepare initial condition
+    >>> integrate_time = np.linspace(t/t0, timepoint_tx_days[it+1]/t0 ,n_interval+1) / pde_model.time_scale_factor
+    >>> cell_index = ?
+    >>> u0 = Dataset.u_b[it, cell_index].float().to(device)
+    >>> s0 = torch.from_numpy(Dataset.cellstate[cell_index]).float().to(device)
+    >>> # perform simulation
+    >>> S_trajectory = DT.cellstate_drift(s0, integrate_time)
+    >>> # infer dynamic transport map
+    >>> Tmaps_t, Tmaps_t_norm = DT.transition_by_batch(s0, u0, integrate_time, n_interval=n_interval, ncell=ncell)
     """
     def __init__(self, pde_model=None, stochastic=False, noise_schedule=None, n_repeat=30):
         super().__init__()
@@ -227,6 +253,37 @@ class Density_Transfer(nn.Module):
 class DT_analysis:
     r"""
     class to analyze the density transport result from saved files
+
+    Args
+    ------
+    adata : anndata
+        the single cell type object with annotaion
+    result_dir : Path
+        the abs path to the result directory where Density_Transfer results are saved
+    celltype : str
+        the cell type to analyze
+
+
+    Example
+    ------
+    >>> dta_obj = DT_analysis(adata, result_dir, celltype)
+    >>> TM = DT.TM_dict[time]
+    >>> celltypes = ['Ery','HSC','Int prog','Meg']
+    >>> ct_prop = dta_obj.density_by_celltype_step(celltypes)
+    >>> agg_density = dta_obj.density_by_celltype_step(celltypes, step=-1, norm=False)
+    >>> clusters, row_linkage, reorded_i = DT.hierarchical_clustering(density_matrix=laststep_TM,
+                                                    n_clusters=n_clusters, 
+                                                    log_normalize=log_normalize)
+    >>> g = DT.clustermap(  
+                density_matrix = laststep_TM,
+                clusters = clusters, 
+                row_linkage = row_linkage, 
+                celltypes = tick_labels,
+                cmap = 'viridis',
+                cbar_pos = [1, 0.4, 0.03,0.2],
+                figsize = (7,8),
+                log_normalize=True
+                )
     """
     def __init__(self, adata, result_dir, celltype=None):
         self.adata = adata
@@ -239,10 +296,11 @@ class DT_analysis:
         load the result from saved files, this method returns 4 dictionary with timepoint as key
         
         Saved Properties:
-        - cb_dict: a dictionary of cell barcode at its corresponding time point
-        - TM_dict: a dictionary of *raw* transport map at its corresponding time point
-        - TM_norm_dict: a dictionary of *normalized* transport map at its corresponding time point
-        - trajectory_dict: a dictionary of trajectory at its corresponding time point
+        -----
+        cb_dict: a dictionary of cell barcode at its corresponding time point
+        TM_dict: a dictionary of *raw* transport map at its corresponding time point
+        TM_norm_dict: a dictionary of *normalized* transport map at its corresponding time point
+        trajectory_dict: a dictionary of trajectory at its corresponding time point
         """
         # load cell barcode dict
         
@@ -293,12 +351,15 @@ class DT_analysis:
         # self.adata = self.adata[cb_list].copy
 
     def summarize_cell_proportions(self, df, celltype_list):
-        """
+        r"""
         Summarizes the proportion of cell types mapped from neighbors for each cell
 
-        Inputs:
-        df : Input DataFrame where each column represents a cell and each row a sample.
-        celltype_list : List of cell types to include in the output as columns.
+        Inputs
+        ------
+        df : pd.DataFrame
+            Input DataFrame where each column represents a cell and each row a sample.
+        celltype_list : list
+            List of cell types to include in the output as columns.
         """
         # Compute normalized value counts for each cell
         proportions = df.apply(lambda col: col.value_counts(normalize=True))

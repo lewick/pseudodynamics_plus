@@ -22,12 +22,12 @@ def forward_get_params(pde_model, DataSet, t_ts=None, s_ts=None, timepoint_label
     r"""
     Given the setup dataset, evalute the behavior functions
 
-    Arguments:
+    Args:
     ----------
-    pde_model : nn.Module, sub-class of PINN.models.pde_params_base
-    DataSet : sub-class of `PINN.readers.HighdimAnnDS` 
-    t_ts : None , time point tensor
-    s_ts : None , cell state tensor
+        pde_model : nn.Module, sub-class of pdp.models.pde_params_base
+        DataSet : sub-class of `pdp.readers.HighdimAnnDS` 
+        t_ts : None , time point tensor
+        s_ts : None , cell state tensor
     """
     device = pde_model.device
 
@@ -80,18 +80,18 @@ def agg_param(adata, param:np.ndarray, groupby_key='cell_type', timepoints=None,
     r"""
     Aggregate dynamic parameters by specific cell state label
 
-    Arguments:
+    Args:
     ------
-    adata (AnnData): Annotated data matrix
-    param (str): Parameter name
-    groupby_key (str): Cell state label
-    timepoints (list): Timepoints to aggregate
-    timepoint_key (str): Anndata.obs key in which the time label is stored
-    cellcount_threshold (int) : the min number of cells in the cell type to be considered
+        adata (AnnData): Annotated data matrix
+        param (str): Parameter name
+        groupby_key (str): Cell state label
+        timepoints (list): Timepoints to aggregate
+        timepoint_key (str): Anndata.obs key in which the time label is stored
+        cellcount_threshold (int) : the min number of cells in the cell type to be considered
 
     Returns:
     ------
-    (DataFrame): Aggregated parameters
+        (DataFrame): Aggregated parameters
     """
     if timepoints is None:
         timepoints = adata.uns['pop']['t']
@@ -137,16 +137,16 @@ def continuous_params(pde_model, DataSet,
     Predict the continuous change of dynamic parameters.
     The cellstate observed at the last timepoint is used.
 
-    Arguments:
+    Args:
     ----------
-    pde_model : nn.Module, sub-class of PINN.models.pde_params_base
-    DataSet : sub-class of `PINN.readers.HighdimAnnDS` 
-    param : str, one of ['g', 'v', 'D', 'u']
-    n_interval : number of intermediate point between two timepoints
-    groupby_key : str, aggregate the predicted param according to cell type or cluster, one of the obs_key of the adata
-    agg_fun : aggregtion function
-    chunk_size : int, minibatch size
-    device : str, on which device to compute the parameters i.e. cpu or cuda:0, cuda:1 ...
+        pde_model : nn.Module, sub-class of pdp.models.pde_params_base
+        DataSet : sub-class of `pdp.readers.HighdimAnnDS` 
+        param : str, one of ['g', 'v', 'D', 'u']
+        n_interval : number of intermediate point between two timepoints
+        groupby_key : str, aggregate the predicted param according to cell type or cluster, one of the obs_key of the adata
+        agg_fun : aggregtion function
+        chunk_size : int, minibatch size
+        device : str, on which device to compute the parameters i.e. cpu or cuda:0, cuda:1 ...
     """
 
     param_ls = []
@@ -210,17 +210,17 @@ def density_shortterm_simulation(pde_model, DataSet, timepoint_idx=None, time_sp
     r"""
     simulate density for each cells for any two consecutive timepoints
 
-    Arguments:
+    Args:
     ----------
-    pde_model : nn.Module, sub-class of PINN.models.pde_params_base
-    DataSet : sub-class of `PINN.readers.HighdimAnnDS` 
-    timepoint_idx : list of index , default the full timepoints defined in DataSet
-    time_span : int , how many step of the timepoint index
-    return_all : bool, if return the other output
+        pde_model : nn.Module, sub-class of pdp.models.pde_params_base
+        DataSet : sub-class of `pdp.readers.HighdimAnnDS` 
+        timepoint_idx : list of index , default the full timepoints defined in DataSet
+        time_span : int , how many step of the timepoint index
+        return_all : bool, if return the other output
     
     Return:
     ---------
-    u_int_all : np.ndarry [n_timepoints, n_cells]
+        u_int_all : np.ndarry [n_timepoints, n_cells]
     """
 
     device = pde_model.device
@@ -339,24 +339,24 @@ def project_params_to_pseudotime(adata, params, param_names='g v2', timepoints=N
 
     Args
     -------
-    adata : AnnData object, the adata with pseudotime and obs
-    params : list of np.ndarray, each array is the parameters for one timepoint
-    param_names : str, the names of the parameters, e.g. 'g v2'
-    timepoints : list of int, the timepoints for the parameters, if None, use the timepoints in adata.uns['pop']['t']
-    pseudotime_key : str, the key of the pseudotime in adata.obs, default 'pseudotime_scaled'
-    nbins : int, the number of bins to aggregate the pseudotime, default 100
-    return_y : bool, if True, return the smoothed y values, otherwise return the figure and axes
+        adata : AnnData object, the adata with pseudotime and obs
+        params : list of np.ndarray, each array is the parameters for one timepoint
+        param_names : str, the names of the parameters, e.g. 'g v2'
+        timepoints : list of int, the timepoints for the parameters, if None, use the timepoints in adata.uns['pop']['t']
+        pseudotime_key : str, the key of the pseudotime in adata.obs, default 'pseudotime_scaled'
+        nbins : int, the number of bins to aggregate the pseudotime, default 100
+        return_y : bool, if True, return the smoothed y values, otherwise return the figure and axes
     
     Return:
     -------
-    fig, axs : matplotlib figure and axes, the figure with the aggregated parameters    
-    
-    if return_y : y_smooths
+        fig, axs : matplotlib figure and axes, the figure with the aggregated parameters    
+        
+        if return_y : y_smooths
 
     Example
     -------
     >>> nbins =30
-    >>> y =  PINN.tl.project_params_to_pseudotime(adata,
+    >>> y =  pdp.tl.project_params_to_pseudotime(adata,
                                     params = adata.obs["vnorm_v1"].values.reshape(1,-1), 
                                     param_names = 'v_v1',
                                     timepoints = adata.uns['pop']['t'][[0]],
@@ -451,16 +451,16 @@ def W_distance(u_b, u_simulate, p=2, log_transform=False):
     Normalize the density and compute the Wasserstein distance between observation and prediction.
     Log-density is supported, pass log_transform = True
 
-    Input
+    Args
     -------
-    u_b : ndarray, [n_time, n_cell] , observed density
-    u_simulate : ndarray, [n_time, n_cell], inferred desity
-    p : int, degree of the distance, default W-2 distance
-    sanity_check : bool, whether check shape and positivity
+        u_b : ndarray, [n_time, n_cell] , observed density
+        u_simulate : ndarray, [n_time, n_cell], inferred desity
+        p : int, degree of the distance, default W-2 distance
+        sanity_check : bool, whether check shape and positivity
 
     Return 
     -------
-    Wasserstein distance : ndarry, [n_time,]
+        Wasserstein distance : ndarry, [n_time,]
     """
     u_b_local = u_b.copy()
     u_simulate_local = u_simulate.copy()
@@ -492,16 +492,16 @@ def W_log_distance(u_b, u_simulate, p=2, log_transform=False):
     Normalize the density and compute the Wasserstein distance between observation and prediction.
     Log-density is supported, pass log_transform = True
 
-    Input
+    Args
     -------
-    u_b : ndarray, [n_time, n_cell] , observed density
-    u_simulate : ndarray, [n_time, n_cell], inferred desity
-    p : int, degree of the distance, default W-2 distance
-    sanity_check : bool, whether check shape and positivity
+        u_b : ndarray, [n_time, n_cell] , observed density
+        u_simulate : ndarray, [n_time, n_cell], inferred desity
+        p : int, degree of the distance, default W-2 distance
+        sanity_check : bool, whether check shape and positivity
 
     Return 
     -------
-    Wasserstein distance : ndarry, [n_time,]
+        Wasserstein distance : ndarry, [n_time,]
     """
     u_b_local = u_b.copy()
     u_simulate_local = u_simulate.copy()
@@ -532,7 +532,7 @@ def KLD_density(u_b, u_simulate, sanity_check=True):
     r"""
     Normalize the density and compute the KL-divergence between observation and prediction
 
-    Input
+    Args
     -------
     u_b : ndarray, [n_time, n_cell] , observed density
     u_simulate : ndarray, [n_time, n_cell], inferred desity
@@ -570,14 +570,14 @@ def mmd_laplace(X, Y, gamma=None):
     r"""
     Compute MMD with Laplace kernel between two distributions.
     
-    Input
+    Args
     -------
-    X, Y (array-like): Samples from the two distributions (shape: [n_samples, n_features]).
-    gamma (float, optional): Bandwidth parameter. If None, uses median heuristic.
+        X, Y (array-like): Samples from the two distributions (shape: [n_samples, n_features]).
+        gamma (float, optional): Bandwidth parameter. If None, uses median heuristic.
         
     Return 
     -------
-    float: MMD distance.
+        float: MMD distance.
     """
     X = np.asarray(X)
     Y = np.asarray(Y)
