@@ -3,6 +3,7 @@
 
 myst-nb
 sphinx
+sphinx_design
 sphinx-autodoc-typehints
 sphinx-book-theme>=1.1.4
 sphinx-copybutton>=0.5.2
