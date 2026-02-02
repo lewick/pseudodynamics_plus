@@ -698,7 +698,7 @@ def make_coord_adata(adata, cellstate_key, n_dimension, v = None):
 
     return new_ad
 
-def super_resolution_pseudobulk(adata, resolution=200, n_pseudobulk=None, key_added='pseudo_bulk', seed=42):
+def super_resolution_pseudobulk(adata, resolution=200, n_pseudobulk=None, key_added='pseudo_bulk', seed=42, rapids_singlecell=False):
     r"""
     Use super-high resolution leiden algorithm to generate pseudo-bulk
     
@@ -718,13 +718,15 @@ def super_resolution_pseudobulk(adata, resolution=200, n_pseudobulk=None, key_ad
         resolution = 200 
 
     ncell = adata.shape[0]
-    if ncell > 1e4:
+    if rapids_singlecell and (ncell > 1e4):
         try:
             import rapids_singlecell as rsc 
             leiden = rsc.tl.leiden
             print("rapids_singlecell detected, rsc leiden is used to accelarate")
         except:
-            leiden = sc.tl.leiden
+            pass
+    else:
+        leiden = sc.tl.leiden
     
     magnitude_of = lambda x: int(np.log2(x))
 

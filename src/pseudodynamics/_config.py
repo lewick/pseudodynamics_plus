@@ -160,9 +160,12 @@ class ExperimentConfig:
         self.args = Namespace(**self.raw_args)
 
         if main_dir is not None:
-            old_main = self.experiment_config['checkpoint_dir'].split("logs/")[0]
-            self.experiment_config['checkpoint_dir'] = self.experiment_config['checkpoint_dir'].replace(old_main, main_dir)
-            self.experiment_config['save_dir'] = self.experiment_config['save_dir'].replace(old_main, main_dir)
+            try:
+                old_main = self.experiment_config['checkpoint_dir'].split("logs/")[0]
+                self.experiment_config['checkpoint_dir'] = self.experiment_config['checkpoint_dir'].replace(old_main, main_dir)
+                self.experiment_config['save_dir'] = self.experiment_config['save_dir'].replace(old_main, main_dir)
+            except:
+                pass
 
     def find_lastest_ckpt(self):
         """
