@@ -73,6 +73,12 @@ setup(
             'sphinxcontrib-bibtex==2.6.5',
             'sphinxcontrib-katex>=0.9.11',
             'sphinxext-opengraph>=0.13.0',
+            "furo >=2022.09.29",
+            "scanpydoc >=0.5",
+            "ipython >=7.1.1",
+            "ipykernel",
+            "sphinx_design >=0.3.0",
+            "sphinx_autodoc_typehints >=1.10.3",
         ]},
 
 )
