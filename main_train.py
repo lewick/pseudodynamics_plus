@@ -179,7 +179,7 @@ val_DL = DataLoader(val_DS, batch_size=None, num_workers=10)
 
 device = 'gpu' if torch.cuda.is_available() else 'cpu'
 device = 'cpu' if args.gpu_devices == None else 'gpu'
-gpu_device = args.gpu_devices if args.gpu_devices == None else [args.gpu_devices]
+gpu_device = args.gpu_devices if args.gpu_devices == None else [int(args.gpu_devices)]
 
 trainer = pl.Trainer(
                     #auto_lr_find=True,
@@ -189,7 +189,7 @@ trainer = pl.Trainer(
                     # gradient_clip_val=0.5,
                     default_root_dir=save_path,
                     devices = gpu_device, 
-                    max_epochs=300,
+                    max_epochs=400,
                     callbacks=[callbacks.ModelCheckpoint(filename='{epoch}-{val_loss:.8f}',
                                                 monitor="val_loss", mode="min", save_top_k=2)]
                     )
