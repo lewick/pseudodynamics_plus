@@ -45,7 +45,7 @@ class HigDim_AnnDS(AnnDataset):
         
         super().__init__(AnnData, cellstate_key=cellstate_key, timepoint_key=timepoint_key, pop_dict=pop_dict, n_grid=n_grid, collocation_points=collocation_points,  log_transform=log_transform, norm_time=norm_time, resampling_indensity=resampling_indensity, resampling_rate=resampling_rate)
         
-        self.knn_volume = knn_volume
+        self.knn_volume = eval(knn_volume) if type(knn_volume) == str else knn_volume
         self.n_dimension = n_dimension
         self.nearby_cellstate = nearby_cellstate
         self.deltax_key = deltax_key
@@ -188,7 +188,7 @@ class HigDim_AnnDS(AnnDataset):
             print(f"using pre-defined density fun `{type(density_funs[0])}`")
             use_gausian = False
 
-        if self.knn_volume:
+        if self.knn_volume == True:
             self.volume = self.compute_volume()
         else:
             self.volume = np.ones_like(self.adata.shape[0])
