@@ -7,12 +7,12 @@ from tqdm.contrib.concurrent import process_map
 from scipy.stats import gaussian_kde
 from torch.utils.data import Dataset, DataLoader, TensorDataset
 from ._base_Dataset import AnnDataset, MeshGrid, Processed_baseDS
-# from Dataset_base 
- 
-                                ##################################
-                                ## Trajectory Independent  DS   ##
-                                ##################################
 
+# from Dataset_base
+
+##################################
+## Trajectory Independent  DS   ##
+##################################
 
 
 class HigDim_AnnDS(AnnDataset):
@@ -21,15 +21,15 @@ class HigDim_AnnDS(AnnDataset):
 
     Args
     --------
-    n_repeat :  int 
+    n_repeat :  int
         the output file path from script
     nearby_cellstate : int
             the number of near (cell state)
-    norm_Time : boolen 
-        log-normalize the real timepoint 
-    AnnData : annData, 
+    norm_Time : boolen
+        log-normalize the real timepoint
+    AnnData : annData,
         the single cell object
-    cellstate_key : str 
+    cellstate_key : str
         the obsm key, the lower dimension representation on which we will use to compute density
     timepoint_key : str
         the obs key that indicate the experimental time the cells are collected from
@@ -41,30 +41,61 @@ class HigDim_AnnDS(AnnDataset):
         the space to evaluate the density
 
     """
-    def __init__(self, AnnData, cellstate_key='cellstate', timepoint_key='timepoint_tx_days', timepoint_idx=None, n_dimension=5, knn_volume= False, nearby_cellstate=1, norm_time=False, deltax_key=None, density_funs=None, kde_kws={}, base_cellstate=None,  pop_dict=None, n_grid=300, collocation_points=600,  log_transform=False ,resampling_indensity=0.5, resampling_rate=0.5):
-        
-        super().__init__(AnnData, cellstate_key=cellstate_key, timepoint_key=timepoint_key, pop_dict=pop_dict, n_grid=n_grid, collocation_points=collocation_points,  log_transform=log_transform, norm_time=norm_time, resampling_indensity=resampling_indensity, resampling_rate=resampling_rate)
-        
+
+    def __init__(
+        self,
+        AnnData,
+        cellstate_key="cellstate",
+        timepoint_key="timepoint_tx_days",
+        timepoint_idx=None,
+        n_dimension=5,
+        knn_volume=False,
+        nearby_cellstate=1,
+        norm_time=False,
+        deltax_key=None,
+        density_funs=None,
+        kde_kws={},
+        base_cellstate=None,
+        pop_dict=None,
+        n_grid=300,
+        collocation_points=600,
+        log_transform=False,
+        resampling_indensity=0.5,
+        resampling_rate=0.5,
+    ):
+
+        super().__init__(
+            AnnData,
+            cellstate_key=cellstate_key,
+            timepoint_key=timepoint_key,
+            pop_dict=pop_dict,
+            n_grid=n_grid,
+            collocation_points=collocation_points,
+            log_transform=log_transform,
+            norm_time=norm_time,
+            resampling_indensity=resampling_indensity,
+            resampling_rate=resampling_rate,
+        )
+
         self.knn_volume = eval(knn_volume) if type(knn_volume) == str else knn_volume
         self.n_dimension = n_dimension
         self.nearby_cellstate = nearby_cellstate
         self.deltax_key = deltax_key
         self.kde_kws = kde_kws
 
-        
         if isinstance(timepoint_idx, list):
             pop_idx = timepoint_idx
         else:
             pop_idx = slice(None, timepoint_idx)
-        
+
         self.pop_idx = pop_idx
 
-        self.popD = {k:v[pop_idx] for k,v in self.popD.items()}
-        self.n_timepoint = len(self.popD['t'])
+        self.popD = {k: v[pop_idx] for k, v in self.popD.items()}
+        self.n_timepoint = len(self.popD["t"])
 
         # subset the adata
         if timepoint_idx is not None:
-            t_max = self.popD['t'].max()
+            t_max = self.popD["t"].max()
             cbs = self.adata.obs.query(f"`{self.timepoint_key}` <= @t_max").index
             self.adata = self.adata[cbs]
 
@@ -75,54 +106,62 @@ class HigDim_AnnDS(AnnDataset):
         # define the delta x for informing v
         if deltax_key is None:
             self.deltax = None
-        elif deltax_key in self.adata.obsm_keys():
+        elif deltax_key in self.adata.obsm.keys():
             self.deltax = self.adata.obsm[deltax_key].copy()[:, :n_dimension]
         elif deltax_key in self.adata.layers:
             self.deltax = self.adata.layers[deltax_key].copy()[:, :n_dimension]
-        
-        if norm_time == 'log':
-            T_b =  np.log(np.where(self.popD['t']==0, 1, self.popD['t']))
+
+        if norm_time == "log":
+            T_b = np.log(np.where(self.popD["t"] == 0, 1, self.popD["t"]))
             T_b = T_b / T_b.max()
             self.T_b = T_b
-        elif norm_time == 'min_minus': 
-            self.T_b = self.popD['t'] - min(self.popD['t'])
-        elif norm_time == 'none':
-            self.T_b = self.popD['t']
+        elif norm_time == "min_minus":
+            self.T_b = self.popD["t"] - min(self.popD["t"])
+        elif norm_time == "none":
+            self.T_b = self.popD["t"]
         else:
-            T_b = self.popD['t']
-            T_b = T_b / T_b.min() 
+            T_b = self.popD["t"]
+            # T_b = T_b / T_b.min()
             self.T_b = T_b
-        
+
         ###
-        # set up boundary conditions 
-        ### 
+        # set up boundary conditions
+        ###
         self.cellstate_t_ls = []
-        for tb_idx, t_b in enumerate(self.popD['t']):
+        for tb_idx, t_b in enumerate(self.popD["t"]):
             # subset ad_t
             cb_t = self.adata.obs.query(f"`{self.timepoint_key}` == @t_b").index
             ad_t = self.adata[cb_t].copy()
             cellstate_t = ad_t.obsm[self.cellstate_key][:, :n_dimension]
             self.cellstate_t_ls.append(cellstate_t)
 
-        self.timepoint_mask = [self.adata.obs[self.timepoint_key] == t for t in self.popD['t']]
+        self.timepoint_mask = [
+            self.adata.obs[self.timepoint_key] == t for t in self.popD["t"]
+        ]
 
         ###
         #  IMPORTANT !
         ###
-        # use the cell state key of the entire dataset 
-        # as it tells what are the possible points of the entire cell state space 
-        cellstate = self.adata.obsm[self.cellstate_key][:, :n_dimension] if base_cellstate is None else base_cellstate
+        # use the cell state key of the entire dataset
+        # as it tells what are the possible points of the entire cell state space
+        cellstate = (
+            self.adata.obsm[self.cellstate_key][:, :n_dimension]
+            if base_cellstate is None
+            else base_cellstate
+        )
         self.cellstate = cellstate
         self.s = torch.from_numpy(cellstate).float()
-        self.s = torch.cat([self.s]*len(self.popD['t'])).float()
+        self.s = torch.cat([self.s] * len(self.popD["t"])).float()
 
-        
         # observeds
-        self.pop_mean = self.popD['mean'] # (tb,)
+        self.pop_mean = self.popD["mean"]  # (tb,)
         # self.T_b = T_b         # (tb,)
-        var_ls = [self.popD['std'][i]**2 / self.popD['n_lib'][i] for i in range(len(self.popD['t']))]
+        var_ls = [
+            self.popD["std"][i] ** 2 / self.popD["n_lib"][i]
+            for i in range(len(self.popD["t"]))
+        ]
         self.pop_var = np.array(var_ls)  # (tb,)
-        
+
         ## compute the densities
         # pay attention to the definition of self.cellstate
         self.compute_density(density_funs)
@@ -132,33 +171,33 @@ class HigDim_AnnDS(AnnDataset):
         Compute the volume of each cell from KNN distances, assume the inner dimension is 2 and the min distance to represent radius
         """
         print("Dataset : Use KNN distances to compute the volume and rescale density")
-        
-        dist = self.adata.obsp['distances'].copy()
-        conn = self.adata.obsp['connectivities'].copy()
+
+        dist = self.adata.obsp["distances"].copy()
+        conn = self.adata.obsp["connectivities"].copy()
         s = self.cellstate
 
         Vol = []
         for i in range(dist.shape[0]):
 
-            ### From the specified cell state space 
-            DM_dist = np.sum((s[conn[i].indices] - s[[i]])**2,axis=1)*0.5
+            ### From the specified cell state space
+            DM_dist = np.sum((s[conn[i].indices] - s[[i]]) ** 2, axis=1) * 0.5
             min_DMdist = DM_dist[np.nonzero(DM_dist)].min()
             max_DMdist = DM_dist.max()
 
             # Vol.append(np.sqrt(min_DMdist*max_DMdist))
-            Vol.append( DM_dist.mean() )
+            Vol.append(DM_dist.mean())
 
         vol = np.array(Vol)
-        thres = np.quantile(Vol, 0.99) # simply to remove outlier
+        thres = np.quantile(Vol, 0.99)  # simply to remove outlier
         vol_clip = np.clip(vol, 0, thres)
-        
+
         ## volume smoothing
         if smooth:
             print("Dataset : smoothing KNN derived single-cell volume..")
             knn_idx = [conn[i].indices for i in range(s.shape[0])]
             vol_smooth = [vol_clip[knn_id].mean() for knn_id in knn_idx]
             vol_clip = np.array(vol_smooth)
-        
+
         return vol_clip
 
     def compute_density(self, density_funs=None):
@@ -175,15 +214,15 @@ class HigDim_AnnDS(AnnDataset):
         """
         ub_ls = []
         u_scale = []
-
+        print("A")
         if density_funs is None:
-            print("\n"+"="*20)
-            print("Dataset : Computing density :")
-            print("\t `density_funs` not specified, default estimator gaussian kde")
+            # print("\n"+"="*20)
+            # print("Dataset : Computing density :")
+            # print("\t `density_funs` not specified, default estimator gaussian kde")
             use_gausian = True
             density_funs = []
         else:
-            print("\n"+"="*20)
+            print("\n" + "=" * 20)
             print("Dataset : Computing density :")
             print(f"using pre-defined density fun `{type(density_funs[0])}`")
             use_gausian = False
@@ -193,71 +232,79 @@ class HigDim_AnnDS(AnnDataset):
         else:
             self.volume = np.ones_like(self.adata.shape[0])
 
-        for tb_idx, t_b in enumerate(self.popD['t']):
-            
+        for tb_idx, t_b in enumerate(self.popD["t"]):
+
             # subset ad_t
-            
+
             cellstate_t = self.cellstate_t_ls[tb_idx]
-            
-            # assess density and return 
+
+            # assess density and return
             if use_gausian:
-                density_fun = gaussian_kde(cellstate_t.T, **self.kde_kws)
+                # subsample for faster and more generalized density estimation
+                cellstate_t_sub = cellstate_t[
+                    np.random.choice(
+                        cellstate_t.shape[0],
+                        min(2000, cellstate_t.shape[0]),
+                        replace=False,
+                    )
+                ]
+                density_fun = gaussian_kde(cellstate_t_sub.T, **self.kde_kws)
                 density_funs.append(density_fun)
 
             try:
-                u  = density_funs[tb_idx](self.cellstate)   # evaluate with the entire space
+                u = density_funs[tb_idx](
+                    self.cellstate
+                )  # evaluate with the entire space
             except:
-                u  = density_funs[tb_idx](self.cellstate.T)   # evaluate with the entire space
-            n_exp = self.popD['n_lib'][tb_idx]
+                u = density_funs[tb_idx](
+                    self.cellstate.T
+                )  # evaluate with the entire space
+            n_exp = self.popD["n_lib"][tb_idx]
 
             # u_min = np.min(u[u!=0])
             if self.log_transform:
-                threshold = np.quantile(u, q=[1e-3,1-1e-3])
+                threshold = np.quantile(u, q=[1e-3, 1 - 1e-3])
                 u = np.clip(u, *threshold) + np.log(self.volume)
                 u_sum = np.exp(u).sum()
-                scaler = np.log(self.popD['mean'][tb_idx] / u_sum)
+                scaler = np.log(self.popD["mean"][tb_idx] / u_sum)
                 u = u - np.log(u_sum)
-                ub_ls.append(u + np.log(self.popD['mean'][tb_idx]))
+                ub_ls.append(u + np.log(self.popD["mean"][tb_idx]))
             else:
                 u *= self.volume
                 u_sum = u.sum()
-                u = np.where(u!=0, u, 1e-10) # replace 0 with 0.1* u_min
-                scaler = self.popD['mean'][tb_idx] / u_sum
+                u = np.where(u != 0, u, 1e-10)  # replace 0 with 0.1* u_min
+                scaler = self.popD["mean"][tb_idx] / u_sum
                 u = u / u.sum()
-                # u = np.clip(u, a_min=1e-10, a_max=None) 
-                ub_ls.append(u*self.popD['mean'][tb_idx])        
-            
+                print(
+                    f'Cell state sum at time {tb_idx}: {u.sum().item()}, popD mean: {self.popD["mean"][tb_idx]}, u shape: {u.shape}'
+                )
+                # u = np.clip(u, a_min=1e-10, a_max=None)
+                ub_ls.append(u * self.popD["mean"][tb_idx])
+
             u_scale.append(scaler)
 
-        self.u_b = np.vstack(ub_ls)   # (tb, n_cell)
+        self.u_b = np.vstack(ub_ls)  # (tb, n_cell)
         self.density_funs = density_funs
         self.u_scale = u_scale
 
-        
         # norm_p
-        ub_norm = self.u_b.sum(axis=1, keepdims=True)    # (t, n_cell)
-        self.density_P = self.u_b/ub_norm               
+        ub_norm = self.u_b.sum(axis=1, keepdims=True)  # (t, n_cell)
+        self.density_P = self.u_b / ub_norm
         scaled_P = self.density_P.flatten() ** self.resampling_indensity
-        self.density_P = scaled_P / scaled_P.sum() 
-        
+        self.density_P = scaled_P / scaled_P.sum()
+
         self.u_b = torch.from_numpy(self.u_b.flatten()).float()
 
-        tb_ls = [np.full((self.cellstate.shape[0],), self.T_b[tb_idx]) for tb_idx, t_b in enumerate(self.popD['t'])]
-        self.t_b = torch.from_numpy(np.vstack(tb_ls).flatten()).float()
-
-        self.s_std = torch.from_numpy(self.cellstate.std(axis=0)).float()
-
-
     def __len__(self):
-        return self.s.shape[0] 
+        return self.s.shape[0]
 
     def __getitem__(self, i):
-        
+
         # boundary points
         # resampling rate  is set to 0.5
-        if np.random.random() <= self.resampling_rate: 
+        if np.random.random() <= self.resampling_rate:
             i = self.resampling_by_density(1, p=self.density_P).item()
-        s_bon = self.s[i]      
+        s_bon = self.s[i]
         t_bon = self.t_b[i]
         u_bon = self.u_b[i]
 
@@ -270,31 +317,31 @@ class HigDim_AnnDS(AnnDataset):
         t_col = np.random.uniform(self.t_b.min().item(), self.t_b.max().item())
         t_col = torch.tensor([t_col]).float()
 
-        return  s_col, t_col, s_bon.squeeze(), t_bon, u_bon
+        return s_col, t_col, s_bon.squeeze(), t_bon, u_bon
 
 
 class TwoTimpepoint_AnnDS(HigDim_AnnDS):
     r"""
     Dataset for high dimensional cellstate
     Each batch returns the cellstates, and their density in two consecutive timepoints
-    
+
     Args
     -----
-    AnnData : annData, 
-        the single cell dataset 
-    cellstate_key : str, 
+    AnnData : annData,
+        the single cell dataset
+    cellstate_key : str,
         the obsm key, the lower dimension representation on which we will use to compute density
-    timepoint_key : str, 
+    timepoint_key : str,
         the obs key that indicate the experimental time the cells are collected from
-    log_transform : bool, 
+    log_transform : bool,
         default True, whether the population size will be log transformed to reduce the magnitude of the data
     n_repeat : int
             the output file path from script
     nearby_cellstate : int
         the number of near (cell state)
     norm_Time : bool
-        log-normalize the real timepoint 
-    split : str, 
+        log-normalize the real timepoint
+    split : str,
         train, val or test
     knn_volume : bool
         whether to use the volume of the knn graph to rescale the density
@@ -309,45 +356,98 @@ class TwoTimpepoint_AnnDS(HigDim_AnnDS):
                             **config.dataset_config
                             )
     """
-    def __init__(self, AnnData, split='train', cellstate_key='cellstate', timepoint_key='timepoint_tx_days', timepoint_idx=None, n_dimension=5, knn_volume= False,  batchsize=200,  norm_time=False, deltax_key=None, density_funs=None, kde_kws={}, nearby_cellstate=1, base_cellstate=None,  pop_dict=None, n_grid=300, collocation_points=600,  log_transform=False ,resampling_indensity=0.5, resampling_rate=0.5):
-        
-        super().__init__(AnnData, cellstate_key=cellstate_key, timepoint_key=timepoint_key, timepoint_idx=timepoint_idx, knn_volume=knn_volume, n_dimension=n_dimension, nearby_cellstate=nearby_cellstate, norm_time=norm_time, deltax_key=deltax_key, density_funs=density_funs, kde_kws=kde_kws, base_cellstate=base_cellstate,  pop_dict=pop_dict, n_grid=n_grid, collocation_points=collocation_points,  log_transform=log_transform ,resampling_indensity=resampling_indensity, resampling_rate=resampling_rate)
+
+    def __init__(
+        self,
+        AnnData,
+        split="train",
+        cellstate_key="cellstate",
+        timepoint_key="timepoint_tx_days",
+        timepoint_idx=None,
+        n_dimension=5,
+        knn_volume=False,
+        batchsize=200,
+        norm_time=False,
+        deltax_key=None,
+        density_funs=None,
+        kde_kws={},
+        nearby_cellstate=1,
+        base_cellstate=None,
+        pop_dict=None,
+        n_grid=300,
+        collocation_points=600,
+        log_transform=False,
+        resampling_indensity=0.5,
+        resampling_rate=0.5,
+    ):
+
+        super().__init__(
+            AnnData,
+            cellstate_key=cellstate_key,
+            timepoint_key=timepoint_key,
+            timepoint_idx=timepoint_idx,
+            knn_volume=knn_volume,
+            n_dimension=n_dimension,
+            nearby_cellstate=nearby_cellstate,
+            norm_time=norm_time,
+            deltax_key=deltax_key,
+            density_funs=density_funs,
+            kde_kws=kde_kws,
+            base_cellstate=base_cellstate,
+            pop_dict=pop_dict,
+            n_grid=n_grid,
+            collocation_points=collocation_points,
+            log_transform=log_transform,
+            resampling_indensity=resampling_indensity,
+            resampling_rate=resampling_rate,
+        )
         self.batchsize = batchsize
         self.u_b = self.u_b.reshape(self.n_timepoint, -1)
 
-        if split in ['train', 'val', 'test']:
+        if split in ["train", "val", "test"]:
             self.split = split
-            if 'split' not in self.adata.obs_keys():
+            if "split" not in self.adata.obs.keys():
                 self.random_train_val_test_split()
-            
+
             # subset cells belonging to the given split
             self.subset_dataset()
 
-        elif split is None: 
+        elif split is None:
             self.split = None
             print("Dataset : all cells are used")
 
         else:
-            raise ValueError("the input for kwarg `split` should be ['train', 'val', 'test' , None]")
+            raise ValueError(
+                "the input for kwarg `split` should be ['train', 'val', 'test' , None]"
+            )
+        tb_ls = [
+            np.full((self.cellstate.shape[0],), self.T_b[tb_idx])
+            for tb_idx, t_b in enumerate(self.popD["t"])
+        ]
+        self.t_b = torch.from_numpy(np.vstack(tb_ls).flatten()).float()
 
+        self.s_std = torch.from_numpy(self.cellstate.std(axis=0)).float()
 
     def random_train_val_test_split(self):
         r"""
         random train, val, test spliting with the ratio 0.8:0.1:0.1
         """
-        
+
         print("random train, val, test spliting with the ratio 0.8:0.1:0.1")
         print("training label saved to obs under key `split`")
 
         n_cell = self.adata.shape[0]
-        train_val_cells = np.random.choice(self.adata.obs_names, size=int(n_cell*0.9), replace=False)
-        val_cells = np.random.choice(train_val_cells, size=int(len(train_val_cells)*0.1), replace=False)
+        train_val_cells = np.random.choice(
+            self.adata.obs_names, size=int(n_cell * 0.9), replace=False
+        )
+        val_cells = np.random.choice(
+            train_val_cells, size=int(len(train_val_cells) * 0.1), replace=False
+        )
 
-        self.adata.obs['split'] = 'test'
-        self.adata.obs.loc[train_val_cells, 'split'] = 'train'
-        self.adata.obs.loc[val_cells, 'split'] = 'val'
+        self.adata.obs["split"] = "test"
+        self.adata.obs.loc[train_val_cells, "split"] = "train"
+        self.adata.obs.loc[val_cells, "split"] = "val"
 
-    
     def subset_dataset(self):
         r"""
         when a valid data split is given, subset the adata, cell state and density
@@ -358,25 +458,26 @@ class TwoTimpepoint_AnnDS(HigDim_AnnDS):
 
         # subset
         self.cellstate = self.cellstate[in_split]
-        self.deltax = self.deltax[in_split]
+        if self.deltax is not None:
+            self.deltax = self.deltax[in_split]
         self.u_b = self.u_b[:, in_split]
         self.s = torch.from_numpy(self.cellstate).float()
-        self.s = torch.cat([self.s]*len(self.popD['t'])).float()
+        self.s = torch.cat([self.s] * len(self.popD["t"])).float()
 
-    
     def __len__(self):
         return int(self.cellstate.shape[0] // self.batchsize)
 
     def __getitem__(self, i):
-        
 
         # sample current t
-        i_t = np.random.randint(0, self.n_timepoint-1)  # the i^th timepoint index
-        i_tp1 = i_t + 1                                 # the index of next timepoint
-        self.i_t = i_t                                  # update i_t
+        i_t = np.random.randint(0, self.n_timepoint - 1)  # the i^th timepoint index
+        i_tp1 = i_t + 1  # the index of next timepoint
+        self.i_t = i_t  # update i_t
 
         # sample cellstates
-        s_index = np.random.choice(np.arange(self.cellstate.shape[0]), size=(self.batchsize,), replace=False)
+        s_index = np.random.choice(
+            np.arange(self.cellstate.shape[0]), size=(self.batchsize,), replace=False
+        )
         s = torch.from_numpy(self.cellstate[s_index]).float()
 
         if self.deltax is not None:
@@ -387,29 +488,37 @@ class TwoTimpepoint_AnnDS(HigDim_AnnDS):
         # get time
         t = torch.full(size=(self.batchsize,), fill_value=self.T_b[i_t]).float()
         t_p1 = torch.full(size=(self.batchsize,), fill_value=self.T_b[i_tp1]).float()
-        
-        # the density of two consecutive 
+
+        # the density of two consecutive
         u_t = self.u_b[i_t, s_index]
         u_tp1 = self.u_b[i_tp1, s_index]  # density of the t plus 1
 
-        return {'s':s, 't':t, 'tp1':t_p1, 'ut':u_t, 'utp1':u_tp1, 'deltax':deltax}
+        return {"s": s, "t": t, "tp1": t_p1, "ut": u_t, "utp1": u_tp1, "deltax": deltax}
+
 
 class TwoTimpepoint_AnnDS_fastmode(TwoTimpepoint_AnnDS):
-    def __init__(self, *args, pseudobulk_key='pseudo_bulk', resolution=None, n_pseudobulk=None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        pseudobulk_key="pseudo_bulk",
+        resolution=None,
+        n_pseudobulk=None,
+        **kwargs,
+    ):
         r"""
         Dataset for high dimensional cellstate
         Each batch returns the cellstates, and their density in two consecutive timepoints
-        
+
         Args
         --------
-        AnnData : annData, the scanpy 
+        AnnData : annData, the scanpy
         cellstate_key : str, the obsm key, the lower dimension representation on which we will use to compute density
         timepoint_key : str, the obs key that indicate the experimental time the cells are collected from
         pop_dict : dict, the dictionary we use to pass population statistics including collected timepoint, mean ,variation
         log_transform : bool, default True, whether the population size will be log transformed to reduce the magnitude of the data
         n_repeat : the output file path from script
         nearby_cellstate : the number of near (cell state)
-        norm_Time : log-normalize the real timepoint 
+        norm_Time : log-normalize the real timepoint
 
         Fast Model Args
         -------
@@ -417,29 +526,26 @@ class TwoTimpepoint_AnnDS_fastmode(TwoTimpepoint_AnnDS):
         pseudobulk_key : str, default 'pseudo_bulk'
         resolution : int, default None -> 40, the resolution pass to leiden algorithmlao
         """
-        super().__init__(*args,**kwargs)
-        
-        
+        super().__init__(*args, **kwargs)
+
         print("Using FAST mode")
         self.pseudobulk_key = pseudobulk_key
         self.resolution = resolution
         self.n_pseudobulk = n_pseudobulk
         self.pseudobulk_aggregation()
 
-         ## compute the densities
+        ## compute the densities
         # pay attention to the definition of self.cellstate
         self.compute_density(self.density_funs)
         self.u_b = self.u_b.reshape(self.n_timepoint, -1)
 
-
-
     def pseudobulk_aggregation(self):
 
-        # copy the original 
-        self.cellstate_origin = self.cellstate.copy() # the original cellstate
+        # copy the original
+        self.cellstate_origin = self.cellstate.copy()  # the original cellstate
         self.u_b_origin = self.u_b.clone()
 
-        print("="*20)
+        print("=" * 20)
         print("Definining cell-state space")
         print("Generating pseudobulk to represent cell-state")
         pseudobulk_key = self.pseudobulk_key
@@ -447,41 +553,57 @@ class TwoTimpepoint_AnnDS_fastmode(TwoTimpepoint_AnnDS):
         if pseudobulk_key in self.adata.obs_keys():
             seed = None
         else:
-            seed = np.random.randint(0,199)
+            seed = np.random.randint(0, 199)
 
-        adata = tl.super_resolution_pseudobulk(self.adata, resolution=self.resolution, n_pseudobulk=self.n_pseudobulk, key_added=pseudobulk_key, seed=seed) # leiden clustering
-        self.adata.uns[f'{pseudobulk_key}_settings'] = adata.uns[f'{pseudobulk_key}_settings']
-        X_df = pd.DataFrame(adata.obsm[self.cellstate_key][:,:self.n_dimension], 
-                            columns=['DM_%s'%i for i in range(self.n_dimension)])
-        X_df[pseudobulk_key] = pd.Series(adata.obs[pseudobulk_key].values, dtype='str')
+        adata = tl.super_resolution_pseudobulk(
+            self.adata,
+            resolution=self.resolution,
+            n_pseudobulk=self.n_pseudobulk,
+            key_added=pseudobulk_key,
+            seed=seed,
+        )  # leiden clustering
+        self.adata.uns[f"{pseudobulk_key}_settings"] = adata.uns[
+            f"{pseudobulk_key}_settings"
+        ]
+        X_df = pd.DataFrame(
+            adata.obsm[self.cellstate_key][:, : self.n_dimension],
+            columns=["DM_%s" % i for i in range(self.n_dimension)],
+        )
+        X_df[pseudobulk_key] = pd.Series(adata.obs[pseudobulk_key].values, dtype="str")
         pseudobulk_ay = X_df.groupby(pseudobulk_key).agg("mean")
         self.cellstate = pseudobulk_ay.values
         self.s = torch.from_numpy(self.cellstate).float()
-        self.s = torch.cat([self.s]*len(self.popD['t'])).float()
+        self.s = torch.cat([self.s] * len(self.popD["t"])).float()
 
-       
     def __getitem__(self, i):
         data_dict = super().__getitem__(i)
         # {'s':s, 't':t, 'tp1':t_p1, 'ut':u_t, 'utp1':u_tp1, 'deltax':deltax}
 
         # fit delta x on the original cell state
-        s_index = np.random.choice(np.arange(self.cellstate_origin.shape[0]), size=(self.batchsize,), replace=False)
+        s_index = np.random.choice(
+            np.arange(self.cellstate_origin.shape[0]),
+            size=(self.batchsize,),
+            replace=False,
+        )
         s_origin = torch.from_numpy(self.cellstate_origin[s_index]).float()
-        
+
         u_t_origin = self.u_b_origin[self.i_t, s_index]
-        u_tp1_origin = self.u_b_origin[self.i_t+1, s_index]
+        u_tp1_origin = self.u_b_origin[self.i_t + 1, s_index]
 
         if self.deltax is not None:
             # delta x is not aggregated
             deltax = torch.from_numpy(self.deltax[s_index]).float()
 
-        data_dict.update({
-            's_origin':s_origin, 'u_t_origin':u_t_origin, 'u_tp1_origin':u_tp1_origin,
-            'deltax':deltax,
-        })
+        data_dict.update(
+            {
+                "s_origin": s_origin,
+                "u_t_origin": u_t_origin,
+                "u_tp1_origin": u_tp1_origin,
+                "deltax": deltax,
+            }
+        )
 
-        return  data_dict
-
+        return data_dict
 
     def get_pseudobulk_vector(self, agg_ad, x_key, pseudobulk_key):
         """
@@ -489,13 +611,13 @@ class TwoTimpepoint_AnnDS_fastmode(TwoTimpepoint_AnnDS):
         """
 
         # convert obsm to dataframe
-        X_df = pd.DataFrame(agg_ad.obsm[x_key][:,:self.n_dimension], 
-                            columns=['DM_%s'%i for i in range(self.n_dimension)])
-        X_df[pseudobulk_key] = pd.Series(agg_ad.obs[pseudobulk_key].values, dtype='str')
-        
-        return X_df.groupby(pseudobulk_key).agg("mean").values # average by label
+        X_df = pd.DataFrame(
+            agg_ad.obsm[x_key][:, : self.n_dimension],
+            columns=["DM_%s" % i for i in range(self.n_dimension)],
+        )
+        X_df[pseudobulk_key] = pd.Series(agg_ad.obs[pseudobulk_key].values, dtype="str")
 
-
+        return X_df.groupby(pseudobulk_key).agg("mean").values  # average by label
 
 
 class Duds_AnnDS(TwoTimpepoint_AnnDS):
@@ -503,36 +625,36 @@ class Duds_AnnDS(TwoTimpepoint_AnnDS):
         r"""
         Mannually distrizitize the duds with pre-sampled ∆x as base
         Each batch returns the cellstates, and their density in two consecutive timepoints and density changes
-        
+
         Args
         --------
         n_repeat : the output file path from script
         nearby_cellstate : the number of near (cell state)
-        norm_Time : log-normalize the real timepoint 
+        norm_Time : log-normalize the real timepoint
 
         Other params from AnnDataset:
         --------
-        AnnData : annData, the scanpy 
+        AnnData : annData, the scanpy
         cellstate_key : str, the obsm key, the lower dimension representation on which we will use to compute density
         timepoint_key : str, the obs key that indicate the experimental time the cells are collected from
         pop_dict : dict, the dictionary we use to pass population statistics including collected timepoint, mean ,variation
         log_transform : bool, default True, whether the population size will be log transformed to reduce the magnitude of the data
         """
-        super().__init__(*args,**kwargs)
+        super().__init__(*args, **kwargs)
         self.delta_s = self.s_std * 0.01
 
         if precomputed_duds is None:
             self.compute_duds()
         else:
             self.duds = precomputed_duds
-        
+
         if self.duds.shape[0] != self.T_b.shape[0]:
             self.duds = self.duds[self.pop_idx]
 
     def compute_duds(self):
         # computing duds
         dudcs_ls = []
-        for i_t,t in enumerate(self.T_b):
+        for i_t, t in enumerate(self.T_b):
 
             den_fn = self.density_funs[i_t]
             u_tb = self.u_b[i_t].numpy()
@@ -540,7 +662,7 @@ class Duds_AnnDS(TwoTimpepoint_AnnDS):
             cellstate = self.cellstate.copy()
             delta_s = self.delta_s.numpy().copy()
             scaler = self.u_scale[i_t]
-            
+
             # important step : evaluate the density change of perturbing each dimension
             # wrap into a partial function for multi-process
             # iter_fn = partial(tl.evaluate_u_ds, cellstate=cellstate, u_tb=u_tb, delta_s=delta_s, den_fn=den_fn, scaler=scaler)
@@ -548,18 +670,20 @@ class Duds_AnnDS(TwoTimpepoint_AnnDS):
             if isinstance(den_fn, partial):
                 func = den_fn.func
                 kwargs = den_fn.keywords
-                if 'gradient' in dir(func):
+                if "gradient" in dir(func):
                     du_dcs_t = func.gradient(cellstate, **kwargs)
-            elif 'gradient' in dir(den_fn):
+            elif "gradient" in dir(den_fn):
                 du_dcs_t = den_fn.gradient(cellstate)
             else:
                 du_dcs_t = []
                 for dim in range(cellstate.shape[1]):
                     dcs = np.zeros_like(cellstate)
-                    dcs[:,dim] = np.full((dcs.shape[0],), self.delta_s[dim])
+                    dcs[:, dim] = np.full((dcs.shape[0],), self.delta_s[dim])
                     s_prime = cellstate + dcs
 
-                    dudcs_dim = (den_fn(s_prime.T) - den_fn(cellstate.T)) / self.delta_s[dim]
+                    dudcs_dim = (
+                        den_fn(s_prime.T) - den_fn(cellstate.T)
+                    ) / self.delta_s[dim]
                     du_dcs_t.append(dudcs_dim)
                 du_dcs_t = np.stack(du_dcs_t).T
 
@@ -567,23 +691,24 @@ class Duds_AnnDS(TwoTimpepoint_AnnDS):
                 du_dcs_t += scaler
             else:
                 du_dcs_t *= scaler
-            dudcs_ls.append( du_dcs_t )
+            dudcs_ls.append(du_dcs_t)
 
-        self.duds = np.stack(dudcs_ls) # (n_time, n_cell, n_dim)
+        self.duds = np.stack(dudcs_ls)  # (n_time, n_cell, n_dim)
         assert not np.isinf(self.duds).any(), "infinit duds"
         assert not np.isnan(self.duds).any(), "Nan in duds"
 
-    
     def __getitem__(self, i):
         # sample current t
-        i_t = np.random.randint(0, self.n_timepoint-1)  # the i^th timepoint index
-        i_tp1 = i_t + 1                                 # the index of next timepoint
-        
+        i_t = np.random.randint(0, self.n_timepoint - 1)  # the i^th timepoint index
+        i_tp1 = i_t + 1  # the index of next timepoint
+
         # density fun of time it
         den_fn = self.density_funs[i_t]
 
         # sample cellstates
-        s_index = np.random.choice(np.arange(self.cellstate.shape[0]), size=(self.batchsize,), replace=False)
+        s_index = np.random.choice(
+            np.arange(self.cellstate.shape[0]), size=(self.batchsize,), replace=False
+        )
         s_ay = self.cellstate[s_index]
         s = torch.from_numpy(s_ay).float()
 
@@ -595,60 +720,75 @@ class Duds_AnnDS(TwoTimpepoint_AnnDS):
         # get time
         t = torch.full(size=(self.batchsize,), fill_value=self.T_b[i_t]).float()
         t_p1 = torch.full(size=(self.batchsize,), fill_value=self.T_b[i_tp1]).float()
-        
 
-        # the density of two consecutive 
+        # the density of two consecutive
         u_t = self.u_b[i_t, s_index]
         u_tp1 = self.u_b[i_tp1, s_index]  # density of the t plus 1
 
         duds = torch.from_numpy(self.duds[[i_t, i_tp1]][:, s_index]).float()
         duds = torch.transpose(duds, 0, 1)
-        return  s, t, t_p1, u_t, u_tp1, deltax, duds
+        return s, t, t_p1, u_t, u_tp1, deltax, duds
 
 
 class Duds_AnnDS_fastmode(Duds_AnnDS):
-    def __init__(self, *args, n_pseudobulk=None, pseudobulk_key='pseudo_bulk', resolution=None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        n_pseudobulk=None,
+        pseudobulk_key="pseudo_bulk",
+        resolution=None,
+        **kwargs,
+    ):
         r"""
         FAST MODE : Mannually distrizitize the duds with pre-sampled ∆x as base
         Each batch returns the cellstates, and their density in two consecutive timepoints and density changes
-        
+
         Args
         --------
         n_repeat : the output file path from script
         nearby_cellstate : the number of near (cell state)
-        norm_Time : log-normalize the real timepoint 
+        norm_Time : log-normalize the real timepoint
 
         Other params from AnnDataset:
         --------
-        AnnData : annData, the scanpy 
+        AnnData : annData, the scanpy
         cellstate_key : str, the obsm key, the lower dimension representation on which we will use to compute density
         timepoint_key : str, the obs key that indicate the experimental time the cells are collected from
         pop_dict : dict, the dictionary we use to pass population statistics including collected timepoint, mean ,variation
-        
+
         Fast Model Args
         -------
         n_pseudobulk : int, defult None -> adata.shape[0] / 20, the number of pseudo bulk to end with
         pseudobulk_key : str, default 'pseudo_bulk'
         resolution : int, default None -> 40, the resolution pass to leiden algorithm
         """
-        super().__init__(*args,**kwargs)
+        super().__init__(*args, **kwargs)
 
         print("Using FAST mode")
-        print("="*20)
+        print("=" * 20)
         print("Definining cell-state space")
         print("Generating pseudobulk to represent cell-state")
 
-        adata = tl.super_resolution_pseudobulk(self.adata, resolution=resolution, n_pseudobulk=n_pseudobulk, key_added=pseudobulk_key) # leiden clustering
-        self.adata.uns[f'{pseudobulk_key}_settings'] = adata.uns[f'{pseudobulk_key}_settings']
+        adata = tl.super_resolution_pseudobulk(
+            self.adata,
+            resolution=resolution,
+            n_pseudobulk=n_pseudobulk,
+            key_added=pseudobulk_key,
+        )  # leiden clustering
+        self.adata.uns[f"{pseudobulk_key}_settings"] = adata.uns[
+            f"{pseudobulk_key}_settings"
+        ]
 
-        X_df = pd.DataFrame(adata.obsm[self.cellstate_key][:,:self.n_dimension], 
-                            columns=['DM_%s'%i for i in range(self.n_dimension)])
-        X_df[pseudobulk_key] = pd.Series(adata.obs[pseudobulk_key].values, dtype='str')
+        X_df = pd.DataFrame(
+            adata.obsm[self.cellstate_key][:, : self.n_dimension],
+            columns=["DM_%s" % i for i in range(self.n_dimension)],
+        )
+        X_df[pseudobulk_key] = pd.Series(adata.obs[pseudobulk_key].values, dtype="str")
 
         pdb_cellstate = X_df.groupby(pseudobulk_key).agg("mean").values
         self.cellstate = pdb_cellstate
         self.s = torch.from_numpy(self.cellstate).float()
-        self.s = torch.cat([self.s]*len(self.popD['t'])).float()
+        self.s = torch.cat([self.s] * len(self.popD["t"])).float()
 
         ## compute the densities
         # pay attention to the definition of self.cellstate
@@ -661,9 +801,10 @@ class Duds_AnnDS_fastmode(Duds_AnnDS):
             pass  # pre-specify duds is correct
         else:
             self.compute_duds()
-        
+
         if self.duds.shape[0] != self.T_b.shape[0]:
             self.duds = self.duds[self.pop_idx]
+
 
 class Syn_DS(Dataset):
 
@@ -696,21 +837,23 @@ class Syn_DS(Dataset):
         self.n_time = len(integrate_time)
 
     def __len__(self):
-        return self.cellstate.shape[0] * self.n_time //self.batchsize
+        return self.cellstate.shape[0] * self.n_time // self.batchsize
 
     def __getitem__(self, i):
 
-        i_t = np.random.randint(0, self.n_time-1)  # the i^th timepoint index
-        i_tp1 = i_t + 1 
+        i_t = np.random.randint(0, self.n_time - 1)  # the i^th timepoint index
+        i_tp1 = i_t + 1
         # sample cellstates
-        s_index = np.random.choice(np.arange(self.cellstate.shape[0]), size=(self.batchsize,), replace=False)
+        s_index = np.random.choice(
+            np.arange(self.cellstate.shape[0]), size=(self.batchsize,), replace=False
+        )
 
         s = self.cellstate[s_index].float()
 
         t = torch.full(size=(self.batchsize,), fill_value=self.T_b[i_t]).float()
         t_p1 = torch.full(size=(self.batchsize,), fill_value=self.T_b[i_tp1]).float()
 
-        # the density of two consecutive 
+        # the density of two consecutive
         u_t = self.u_b[i_t, s_index]
         u_tp1 = self.u_b[i_tp1, s_index]  # density of the t plus 1
 
@@ -718,12 +861,22 @@ class Syn_DS(Dataset):
 
         return s, t, t_p1, u_t, u_tp1, deltax
 
-                                ################################
-                                ## Trajectory Dependent  DS   ##
-                                ################################
-                                
+        ################################
+        ## Trajectory Dependent  DS   ##
+        ################################
+
+
 class SingleBranch_AnnDS(AnnDataset, MeshGrid):
-    def __init__(self, *,n_timepoint=None, n_repeat=10, nearby_cellstate=10, max_timespan = 3, replicate_key = 'batch', **kwargs):
+    def __init__(
+        self,
+        *,
+        n_timepoint=None,
+        n_repeat=10,
+        nearby_cellstate=10,
+        max_timespan=3,
+        replicate_key="batch",
+        **kwargs,
+    ):
         """
         Single branch system using pseudotime grid to span the all cell state space
 
@@ -731,49 +884,50 @@ class SingleBranch_AnnDS(AnnDataset, MeshGrid):
         --------
         n_repeat : the output file path from script
         nearby_cellstate : the number of near (cell state)
-        norm_Time : log-normalize the real timepoint 
+        norm_Time : log-normalize the real timepoint
         """
         super().__init__(**kwargs)
         self.n_repeat = n_repeat
         self.nearby_cellstate = nearby_cellstate
-        self.h_inv = 1/self.n_grid
+        self.h_inv = 1 / self.n_grid
         self.replicate_key = replicate_key
 
-        self.popD['t'] = self.popD['t'][:n_timepoint]
-        self.n_timepoint = len(self.popD['t'])
+        self.popD["t"] = self.popD["t"][:n_timepoint]
+        self.n_timepoint = len(self.popD["t"])
 
-        coords = np.linspace(0.01, 0.99, self.n_grid) # generate 1D uniform coord
+        coords = np.linspace(0.01, 0.99, self.n_grid)  # generate 1D uniform coord
         self.s = coords
         self.grid_cellstate = coords
 
         # density
         self.cellstate = self.cellstate.flatten()
-        ub_ls, hist_var_ls,area_var_ls, tb_ls, var_ls = self.compute_grid_density() # this is from MeshGrid
+        ub_ls, hist_var_ls, area_var_ls, tb_ls, var_ls = (
+            self.compute_grid_density()
+        )  # this is from MeshGrid
 
         self.u_b = np.vstack(ub_ls) + 1e-30  # (tb, n_grid)
         # self.mesh_ub = self.u_b.reshape(-1, self.n_grid,self.n_grid) # (tb, n_grid, n_grid)
         self.hist_var = np.vstack(hist_var_ls)
         self.area_var = np.vstack(area_var_ls)
         self.t_b = np.vstack(tb_ls)
-        
+
         # observeds
-        self.pop_mean = self.popD['mean'] # (tb,)
+        self.pop_mean = self.popD["mean"]  # (tb,)
         self.pop_var = np.array(var_ls)  # (tb,)
 
         # timepoint pair:
         self.timpoint_pairs_index = []
-        
+
         if max_timespan is None:
             max_timespan = self.n_timepoint
         else:
-            if max_timespan<=0:
+            if max_timespan <= 0:
                 raise ValueError("max time span must larger than 0")
             max_timespan = max_timespan + 1
 
-        for span in range(1,max_timespan):  # [1, N_t -1]
-            for start in range(self.n_timepoint-span):
-                self.timpoint_pairs_index.append( [start, start+span] )
-
+        for span in range(1, max_timespan):  # [1, N_t -1]
+            for start in range(self.n_timepoint - span):
+                self.timpoint_pairs_index.append([start, start + span])
 
     def __len__(self):
         return len(self.timpoint_pairs_index)
@@ -793,8 +947,18 @@ class SingleBranch_AnnDS(AnnDataset, MeshGrid):
         var = torch.from_numpy(self.pop_var).float()
         return s, t_b, u_b, hist_var, area_var, mean, var, indexs
 
+
 class MeshGrid_AnnDS(AnnDataset, MeshGrid):
-    def __init__(self, *,n_timepoint=None, n_repeat=10, nearby_cellstate=10, norm_time=True, replicate_key='batch', **kwargs):
+    def __init__(
+        self,
+        *,
+        n_timepoint=None,
+        n_repeat=10,
+        nearby_cellstate=10,
+        norm_time=True,
+        replicate_key="batch",
+        **kwargs,
+    ):
         """
         Two branch system using mesh grid to span the all cell state space
 
@@ -802,54 +966,55 @@ class MeshGrid_AnnDS(AnnDataset, MeshGrid):
         --------
         n_repeat : the output file path from script
         nearby_cellstate : the number of near (cell state)
-        norm_Time : log-normalize the real timepoint 
+        norm_Time : log-normalize the real timepoint
         """
         super().__init__(**kwargs)
         self.n_repeat = n_repeat
         self.nearby_cellstate = nearby_cellstate
-        self.h = 1/self.n_grid
+        self.h = 1 / self.n_grid
         self.replicate_key = replicate_key
 
         self.n_timepoint = n_timepoint
-        self.popD['t'] = self.popD['t'][:n_timepoint]
+        self.popD["t"] = self.popD["t"][:n_timepoint]
 
         # subset the adata
         if n_timepoint is not None:
-            t_max = self.popD['t'].max()
+            t_max = self.popD["t"].max()
             cbs = self.adata.obs.query(f"`{self.timepoint_key}` <= @t_max").index
             self.adata = self.adata[cbs]
 
         ###
         # create grided cell state
         ###
-        coords = [np.linspace(0.01, 0.99, self.n_grid) for i in range(self.n_dim)]  # generate 1D uniform coord
-        meshgrid_flat = np.vstack([ay.flatten() for ay in  np.meshgrid(*coords)]).T
+        coords = [
+            np.linspace(0.01, 0.99, self.n_grid) for i in range(self.n_dim)
+        ]  # generate 1D uniform coord
+        meshgrid_flat = np.vstack([ay.flatten() for ay in np.meshgrid(*coords)]).T
 
         self.s = meshgrid_flat
         self.grid_cellstate = meshgrid_flat.T
         # self.meshs = self.s.reshape(self.n_grid,self.n_grid, -1) # from flatten to squared high-dim
 
-        self.h_inv = 1/np.prod([s[1] - s[0] for s in coords])
-        
+        self.h_inv = 1 / np.prod([s[1] - s[0] for s in coords])
+
         ###
         # set up boundary conditions
-        ### 
-        ub_ls, hist_var_ls,area_var_ls, tb_ls, var_ls  = self.compute_grid_density()
-        
+        ###
+        ub_ls, hist_var_ls, area_var_ls, tb_ls, var_ls = self.compute_grid_density()
 
         self.u_b = np.vstack(ub_ls) + 1e-30  # (tb, n_grid**2)
         # self.mesh_ub = self.u_b.reshape(-1, self.n_grid,self.n_grid) # (tb, n_grid, n_grid)
         self.t_b = np.vstack(tb_ls)
 
         # norm_p
-        ub_norm = self.u_b.sum(axis=1, keepdims=True)    # (t, n_grid**2)
-        self.density_P = self.u_b/ub_norm
-        
+        ub_norm = self.u_b.sum(axis=1, keepdims=True)  # (t, n_grid**2)
+        self.density_P = self.u_b / ub_norm
+
         # observeds
         self.pop_var = np.array(var_ls)  # (tb,)
-        self.pop_mean = self.popD['mean'] # (tb,)
-        self.T_b = self.popD['t']         # (tb,)
-    
+        self.pop_mean = self.popD["mean"]  # (tb,)
+        self.T_b = self.popD["t"]  # (tb,)
+
 
 class MeshGrid_Resample(MeshGrid_AnnDS):
     def __init__(self, *args, **kwargs):
@@ -860,19 +1025,20 @@ class MeshGrid_Resample(MeshGrid_AnnDS):
 
     def __len__(self):
         # repeat sampling for 10 times
-        return self.s.shape[0] * (len(self.T_b)  + 1)
+        return self.s.shape[0] * (len(self.T_b) + 1)
 
     def __getitem__(self, i):
-        
+
         tb_i = i // self.s.shape[0] - 1
         tb_p = self.density_P[tb_i]
 
         if tb_i >= 0:
-            resampled_i = self.resampling_by_density(1,p=self.density_P[tb_i]).item()
+            resampled_i = self.resampling_by_density(1, p=self.density_P[tb_i]).item()
         else:
             resampled_i = i
 
         return super().__getitem__(resampled_i)
+
 
 class TwoTimepoint_MeshGrid(MeshGrid_Resample):
     def __init__(self, *args, **kwargs):
@@ -882,31 +1048,32 @@ class TwoTimepoint_MeshGrid(MeshGrid_Resample):
         super().__init__(*args, **kwargs)
 
     def __len__(self):
-        return self.s.shape[0] 
+        return self.s.shape[0]
 
     def __getitem__(self, i):
-        
-        # sample current t
-        i_t = np.random.randint(0, self.n_timepoint-1)  # the i^th timepoint index
-        i_tp1 = i_t + 1                                 # the index of next timepoint
 
-        if np.random.random() <= self.resampling_rate: 
+        # sample current t
+        i_t = np.random.randint(0, self.n_timepoint - 1)  # the i^th timepoint index
+        i_tp1 = i_t + 1  # the index of next timepoint
+
+        if np.random.random() <= self.resampling_rate:
             i = self.resampling_by_density(1, p=self.density_P[i_t]).item()
-    
-            
+
         # sample cellstates
         s = self.s[i].float()
 
         # get time
         t = torch.tensor([self.T_b[i_t]]).float()
         t_p1 = torch.tensor([self.T_b[i_tp1]]).float()
-        
 
-        # the density of two consecutive 
+        # the density of two consecutive
         u_t = torch.from_numpy(self.u_b[i_t, [i]]).float()
-        u_tp1 = torch.from_numpy(self.u_b[i_tp1, [i]]).float()  # density of the t plus 1
+        u_tp1 = torch.from_numpy(
+            self.u_b[i_tp1, [i]]
+        ).float()  # density of the t plus 1
 
-        return  s, t, t_p1, u_t, u_tp1
+        return s, t, t_p1, u_t, u_tp1
+
 
 class AllTimepoint_MeshGrid(MeshGrid_Resample):
     def __init__(self, *args, **kwargs):
@@ -916,26 +1083,27 @@ class AllTimepoint_MeshGrid(MeshGrid_Resample):
         super().__init__(*args, **kwargs)
 
     def __len__(self):
-        return self.s.shape[0] 
+        return self.s.shape[0]
 
     def __getitem__(self, i):
-        
 
-        if np.random.random() <= self.resampling_rate: 
+        if np.random.random() <= self.resampling_rate:
             tb_i = np.random.choice(range(self.density_P.shape[0]))
             i = self.resampling_by_density(1, p=self.density_P[tb_i]).item()
 
-        s_bund = self.s[i,:].copy()
+        s_bund = self.s[i, :].copy()
         s_bund = torch.from_numpy(s_bund).float()
         t_b = torch.from_numpy(self.t_b[:, i]).float().unsqueeze(-1)
         u_b = torch.from_numpy(self.u_b[:, i]).float()
 
         squre_indexes = self.indexing_neighbormesh_center(i, neighborhood=3)
 
-        s_neighbor = self.s[squre_indexes].reshape(3,3,2)
+        s_neighbor = self.s[squre_indexes].reshape(3, 3, 2)
         s_neighbor = torch.from_numpy(s_neighbor).float()
-        u_neighbor = torch.from_numpy(self.u_b[:,squre_indexes]).reshape(-1, 3,3).float()
-        return (s_bund,s_neighbor), t_b, (u_b, u_neighbor)
+        u_neighbor = (
+            torch.from_numpy(self.u_b[:, squre_indexes]).reshape(-1, 3, 3).float()
+        )
+        return (s_bund, s_neighbor), t_b, (u_b, u_neighbor)
 
 
 class MeshGrid_logDS(MeshGrid_Resample):
@@ -947,7 +1115,7 @@ class MeshGrid_logDS(MeshGrid_Resample):
         --------
         n_repeat : the output file path from script
         nearby_cellstate : the number of near (cell state)
-        norm_Time : log-normalize the real timepoint 
+        norm_Time : log-normalize the real timepoint
         """
         super().__init__(*args, **kwargs)
         self.u_b = np.log(self.u_b[:4])
@@ -956,34 +1124,37 @@ class MeshGrid_logDS(MeshGrid_Resample):
         self.t_b = self.t_b[:4]
 
         # norm_p
-        ub_norm = self.u_b.sum(axis=1, keepdims=True)    # (t, n_grid**2)
-        self.density_P = self.u_b/ub_norm
-        
+        ub_norm = self.u_b.sum(axis=1, keepdims=True)  # (t, n_grid**2)
+        self.density_P = self.u_b / ub_norm
+
         # observeds
         self.pop_var = self.pop_var[:4]  # (tb,)
-        self.pop_mean = self.pop_mean[:4] # (tb,)
-        self.T_b = self.T_b[:4]         # (tb,)
+        self.pop_mean = self.pop_mean[:4]  # (tb,)
+        self.T_b = self.T_b[:4]  # (tb,)
 
-                                ########################
-                                ##     Sim DataSet    ##
-                                ########################
+        ########################
+        ##     Sim DataSet    ##
+        ########################
+
 
 class Simple_DS(MeshGrid_AnnDS):
-    
+
     def __init__(self, *, n_timepoint, **kwargs):
         """
         only use the a specific time point
         """
-        super().__init__(**kwargs) 
+        super().__init__(**kwargs)
 
         self.T_b = self.T_b[:n_timepoint]
 
         self.u_b = torch.from_numpy(self.u_b[:n_timepoint].flatten()).float()
         # self.u_b = torch.log(self.u_b)
-        self.t_b = torch.from_numpy(self.t_b[:n_timepoint].flatten().reshape(-1,1)).float()
-        self.s = torch.concat([self.s]*len(range(0, n_timepoint)), dim=0).float()
+        self.t_b = torch.from_numpy(
+            self.t_b[:n_timepoint].flatten().reshape(-1, 1)
+        ).float()
+        self.s = torch.concat([self.s] * len(range(0, n_timepoint)), dim=0).float()
         scaled_P = self.density_P[:n_timepoint].flatten() ** 0.5
-        self.density_P = scaled_P / scaled_P.sum() 
+        self.density_P = scaled_P / scaled_P.sum()
 
         for key in self.popD:
             self.popD[key] = self.popD[key][:n_timepoint]
@@ -997,19 +1168,25 @@ class Simple_DS(MeshGrid_AnnDS):
 
         return self.s[i], self.t_b[i], self.u_b[i]
 
-
-                                ########################
-                                ##  Processed DataSet ##
-                                ########################
+        ########################
+        ##  Processed DataSet ##
+        ########################
 
 
 class Pdyn_ExtractDataset(Processed_baseDS):
-    
-    def __init__(self, Data_pt, n_grid=300, collocation_points=600, n_repeat=10, log_transform=True):
+
+    def __init__(
+        self,
+        Data_pt,
+        n_grid=300,
+        collocation_points=600,
+        n_repeat=10,
+        log_transform=True,
+    ):
         """
-        PINN-dynamics Dataset using the pre-extracted data.   
+        PINN-dynamics Dataset using the pre-extracted data.
         This dataset returns full cell state (0-1) for each mini-batch
-        
+
         Args
         --------
         Data_pt : the output file path from script
@@ -1024,53 +1201,58 @@ class Pdyn_ExtractDataset(Processed_baseDS):
         mean : tensor, the mean population size of the cell
         var
         """
-        super().__init__(Data_pt, n_grid=n_grid, collocation_points=collocation_points, n_repeat=n_repeat, log_transform=log_transform)
+        super().__init__(
+            Data_pt,
+            n_grid=n_grid,
+            collocation_points=collocation_points,
+            n_repeat=n_repeat,
+            log_transform=log_transform,
+        )
         # load the result
         D = torch.load(Data_pt)
 
         s = np.linspace(0, 1, n_grid)
         self.s = torch.from_numpy(s)
-        h_inv = (1 / (s[1] - s[0]))
-        
+        h_inv = 1 / (s[1] - s[0])
+
         ###
         # set up boundary conditions
-        ### 
+        ###
         ub_ls = []
         tb_ls = []
         var_ls = []
-        
-        for tb_idx, t_b in enumerate(D['pop']['t']):
-            
+
+        for tb_idx, t_b in enumerate(D["pop"]["t"]):
+
             # quantify the cell densitied at grided s
             u, N, n_exp = tl.boundary_density_at(D, t_b, s)
-                    
+
             ub_ls.append(u / h_inv)
             tb_ls.append(np.full_like(u, t_b))
-            var_ls.append(D['pop']['var'][tb_idx] /n_exp)
-        
+            var_ls.append(D["pop"]["var"][tb_idx] / n_exp)
+
         self.u_b = np.vstack(ub_ls)  # (tb, n_grid)
         self.t_b = np.vstack(tb_ls)
-        
+
         # observeds
         self.pop_var = np.array(var_ls)  # (tb,)
-        self.pop_mean = D['pop']['mean'] # (tb,)
-        self.T_b = D['pop']['t']         # (tb,)
-        
-        
+        self.pop_mean = D["pop"]["mean"]  # (tb,)
+        self.T_b = D["pop"]["t"]  # (tb,)
+
     def __len__(self):
         return self.n_repeat
-    
-        
+
     def __getitem__(self, i):
         """
         there is no mini-batch, each item returns the full collocation points
-        """ 
-        
+        """
+
         # random collocation points across the s and t domain
-        s_col = torch.Tensor(self.N_coll,1).uniform_(0, 1).float()
-        t_col = torch.Tensor(self.N_coll,1).uniform_(min(self.T_b), max(self.T_b)).float()
-        
-        
+        s_col = torch.Tensor(self.N_coll, 1).uniform_(0, 1).float()
+        t_col = (
+            torch.Tensor(self.N_coll, 1).uniform_(min(self.T_b), max(self.T_b)).float()
+        )
+
         t_b = torch.from_numpy(self.t_b).float()
         s_bund = self.s.clone().detach()
         s_bund = s_bund.broadcast_to(t_b.shape).float()
@@ -1079,15 +1261,23 @@ class Pdyn_ExtractDataset(Processed_baseDS):
         u_b = torch.from_numpy(self.u_b).float()
         mean = torch.from_numpy(self.pop_mean).float()
         var = torch.from_numpy(self.pop_var).float()
-        
+
         return s_col, t_col, s_bund, t_b, u_b, mean, var
 
 
 class Random_ExtractDataset(Pdyn_ExtractDataset):
 
-    def __init__(self, Data_pt, nearby_cellstate=10, n_grid=300, collocation_points=600, n_repeat=10, log_transform=True):
+    def __init__(
+        self,
+        Data_pt,
+        nearby_cellstate=10,
+        n_grid=300,
+        collocation_points=600,
+        n_repeat=10,
+        log_transform=True,
+    ):
         """
-        Based on the pre-extracted dataset, 
+        Based on the pre-extracted dataset,
 
         Args
         -----------
@@ -1095,9 +1285,15 @@ class Random_ExtractDataset(Pdyn_ExtractDataset):
         nearby_cellstate : the range of cell state in a minibatch
 
         """
-        super().__init__(Data_pt, n_grid=n_grid, collocation_points=collocation_points, n_repeat=n_repeat, log_transform=log_transform)       
+        super().__init__(
+            Data_pt,
+            n_grid=n_grid,
+            collocation_points=collocation_points,
+            n_repeat=n_repeat,
+            log_transform=log_transform,
+        )
         self.nearby_cellstate = nearby_cellstate
-    
+
     def __len__(self):
         # repeat sampling for 10 times
         return self.n_grid - self.nearby_cellstate
@@ -1105,82 +1301,100 @@ class Random_ExtractDataset(Pdyn_ExtractDataset):
     def __getitem__(self, i):
         """
         there is no mini-batch, each item returns the full collocation points
-        """ 
+        """
 
         s_range = slice(i, i + self.nearby_cellstate)
 
-
         # random collocation points across the s and t domain
-        s_col = self.s.clone().detach().float().view(-1,1)[s_range,:]
-        t_col = torch.Tensor(self.nearby_cellstate,1).uniform_(min(self.T_b), max(self.T_b)).float()
-        
-        
+        s_col = self.s.clone().detach().float().view(-1, 1)[s_range, :]
+        t_col = (
+            torch.Tensor(self.nearby_cellstate, 1)
+            .uniform_(min(self.T_b), max(self.T_b))
+            .float()
+        )
+
         t_b = torch.from_numpy(self.t_b).float()[:, s_range]
-        s_bund = self.s.clone().detach().float().view(1,-1)[:, s_range]
+        s_bund = self.s.clone().detach().float().view(1, -1)[:, s_range]
         s_bund = s_bund.broadcast_to(t_b.shape).float()
 
         #
         u_b = torch.from_numpy(self.u_b).float()[:, s_range]
-        mean = 0.5*(u_b[:,1:]+u_b[:,:-1]).sum(dim=1, keepdim = True) #/ h_inv   
+        mean = 0.5 * (u_b[:, 1:] + u_b[:, :-1]).sum(dim=1, keepdim=True)  # / h_inv
 
         # mean = torch.from_numpy(self.pop_mean).float()
         var = torch.from_numpy(self.pop_var).float()
-        
+
         return s_col, t_col, s_bund, t_b, u_b, mean, var
 
 
-
 class MeshGrid_DS(Processed_baseDS, MeshGrid):
-    
-    def __init__(self, Data_pt, nearby_cellstate=10, n_grid=300, collocation_points=600, n_repeat=10, log_transform=True, norm_time=True):
+
+    def __init__(
+        self,
+        Data_pt,
+        nearby_cellstate=10,
+        n_grid=300,
+        collocation_points=600,
+        n_repeat=10,
+        log_transform=True,
+        norm_time=True,
+    ):
         """
-        PINN-dynamics Dataset using the pre-extracted data.   
+        PINN-dynamics Dataset using the pre-extracted data.
         This dataset returns full cell state (0-1) for each mini-batch
-        
+
         Args
         --------
         Data_pt : the output file path from script
         nearby_cellstate : the number of near (cell state)
         """
-        super().__init__(Data_pt, n_grid=n_grid, collocation_points=collocation_points, n_repeat=n_repeat, log_transform=log_transform)
+        super().__init__(
+            Data_pt,
+            n_grid=n_grid,
+            collocation_points=collocation_points,
+            n_repeat=n_repeat,
+            log_transform=log_transform,
+        )
         # load the result
         D = torch.load(Data_pt)
-        self.n_dim = D['ind']['hist'][0].shape[1]
+        self.n_dim = D["ind"]["hist"][0].shape[1]
 
         ###
         # create grided cell state
         ###
-        coords = [np.linspace(0.01, 0.99, n_grid) for i in range(self.n_dim)]  # generate 1D uniform coord
-        meshgrid = np.vstack([ay.flatten() for ay in  np.meshgrid(*coords)]).T
+        coords = [
+            np.linspace(0.01, 0.99, n_grid) for i in range(self.n_dim)
+        ]  # generate 1D uniform coord
+        meshgrid = np.vstack([ay.flatten() for ay in np.meshgrid(*coords)]).T
 
         self.s = torch.from_numpy(meshgrid).float()
-        h_inv = 1/np.prod([s[1] - s[0] for s in coords])
+        h_inv = 1 / np.prod([s[1] - s[0] for s in coords])
 
         if norm_time:
-            T_b =  np.log(np.where(D['pop']['t']==0, 1, D['pop']['t']))
+            T_b = np.log(np.where(D["pop"]["t"] == 0, 1, D["pop"]["t"]))
             T_b = T_b / T_b.max()
-        
+
         ###
         # set up boundary conditions
-        ### 
+        ###
         ub_ls = []
         tb_ls = []
         var_ls = []
-        
-        for tb_idx, t_b in enumerate(D['pop']['t']):
-            
+
+        for tb_idx, t_b in enumerate(D["pop"]["t"]):
+
             # quantify the cell densitied at grided s
             u, N, n_exp = tl.boundary_density_at(D, t_b, meshgrid)
-                    
+
             ub_ls.append(u / h_inv)
-            tb_ls.append(np.full_like(u, T_b[tb_idx])) # add norm t
-            var_ls.append(D['pop']['var'][tb_idx] /n_exp)
-        
+            tb_ls.append(np.full_like(u, T_b[tb_idx]))  # add norm t
+            var_ls.append(D["pop"]["var"][tb_idx] / n_exp)
+
         self.u_b = np.vstack(ub_ls)  # (tb, n_grid)
         self.t_b = np.vstack(tb_ls)
-        
+
         # observeds
         self.pop_var = np.array(var_ls)  # (tb,)
-        self.pop_mean = D['pop']['mean'] # (tb,)
-        self.T_b = D['pop']['t']         # (tb,)
+        self.pop_mean = D["pop"]["mean"]  # (tb,)
+        self.T_b = D["pop"]["t"]  # (tb,)
         self.T_b = T_b

@@ -80,20 +80,20 @@ napoleon_google_docstring = False
 napoleon_numpy_docstring = True
 
 autodoc_default_options = {
-    'inherited-members': False,   # <-- This is the key line
-    'show-inheritance': True,     # Optional: Shows the class it inherits from without listing its methods
-    'members': True,
+    "inherited-members": False,  # <-- This is the key line
+    "show-inheritance": True,  # Optional: Shows the class it inherits from without listing its methods
+    "members": True,
     # ... your other options
 }
 
 
-#default_role = "literal"
+# default_role = "literal"
 
 
 bibtex_reference_style = "author_year"
-#napoleon_include_init_with_doc = False
-#napoleon_use_rtype = False  # having a separate entry generally helps readability
-#napoleon_use_param = False
+# napoleon_include_init_with_doc = False
+# napoleon_use_rtype = False  # having a separate entry generally helps readability
+# napoleon_use_param = False
 myst_enable_extensions = [
     "amsmath",
     "colon_fence",
@@ -238,11 +238,12 @@ nitpick_ignore = [
 
 def skip_inherited_members(app, what, name, obj, skip, options):
     # Skip if it's a method and is inherited (not defined in the class's __dict__)
-    if hasattr(obj, '__objclass__') or (hasattr(obj, '__module__') and obj.__module__ != 'pseudodynamics.models'):
+    if hasattr(obj, "__objclass__") or (
+        hasattr(obj, "__module__") and obj.__module__ != "pseudodynamics.models"
+    ):
         return True  # Skip this member
     return skip  # Otherwise, use the default behavior
 
-    
 
 def setup(app):
     """App setup hook."""

@@ -28,5 +28,3 @@ python main_train.py --config_path config.json -G 0
 # without GPU
 python main_train.py --config_path config.json -G None
 ```
-
-

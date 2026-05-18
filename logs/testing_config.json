@@ -13,7 +13,7 @@
         "tol": 0.0001,
         "time_scale_factor": 1,
         "pretrained": null,
-        "gpu_devices": 0,
+        "gpu_devices": null,
         "weight_intensity": null,
         "deltax_weight": 0.01,
         "R_weight": 1,

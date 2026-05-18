@@ -10,7 +10,7 @@ Functions:
 
 # from . import _base, _association_test #, _pattern_test, _start_vs_end_test
 
-# fitGAM =  _base.fitGAM 
+# fitGAM =  _base.fitGAM
 # run_fitGAM_parallel = _base.run_fitGAM_parallel
 # AssociationTest = _association_test.AssociationTest
 # PseudotimeRestrictedAssociationTest = _association_test.PseudotimeRestrictedAssociationTest
